@@ -1,22 +1,22 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_farmacia/screens/Caixa/home.dart';
+import 'package:flutter_farmacia/screens/Caixa/TelaCliente.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_farmacia/utils/utils.dart';
-import 'package:flutter_farmacia/screens/Gerente/home.dart';
-import 'package:flutter_farmacia/screens/Gerente/TelaCliente.dart';
 import 'package:convex_bottom_bar/convex_bottom_bar.dart';
 
-class TelaDividas extends StatefulWidget {
+class TelaDividasCaixa extends StatefulWidget {
   final String users;
   
-  const TelaDividas({super.key, required this.users});
+  const TelaDividasCaixa({super.key, required this.users});
   
   @override
-  State<TelaDividas> createState() => _TelaDividasState();
+  State<TelaDividasCaixa> createState() => _TelaDividasCaixaState();
 }
 
-class _TelaDividasState extends State<TelaDividas> {
+class _TelaDividasCaixaState extends State<TelaDividasCaixa> {
   final supabase = Supabase.instance.client;
   
   List<Map<String, dynamic>> dividas = [];
@@ -56,8 +56,6 @@ class _TelaDividasState extends State<TelaDividas> {
   String ordenarPor = 'vencimento'; // 'preco', 'vencimento', 'data_inicio'
   bool ordenarAscendente = false;
 
-  Map<String, dynamic>? dividaParaEditar;
-
   @override
   void initState() {
     super.initState();
@@ -82,7 +80,6 @@ class _TelaDividasState extends State<TelaDividas> {
           .order('name');
       
       clientes = List<Map<String, dynamic>>.from(response);
-      print('Clientes carregados: ${clientes.length}');
     } catch (e) {
       print('Erro ao carregar clientes: $e');
       clientes = [];
@@ -95,7 +92,6 @@ class _TelaDividasState extends State<TelaDividas> {
         return cliente['name'];
       }
     }
-    print('Cliente não encontrado para CPF: $cpf');
     return 'Cliente sem nome';
   }
 
@@ -108,7 +104,6 @@ class _TelaDividasState extends State<TelaDividas> {
           .order('init_date', ascending: false);
 
       dividas = List<Map<String, dynamic>>.from(response);
-      print('Dívidas carregadas: ${dividas.length}');
       
       // Verificar se clientes já foram carregados, se não, carregar
       if (clientes.isEmpty) {
@@ -143,34 +138,28 @@ class _TelaDividasState extends State<TelaDividas> {
       
       switch (ordenarPor) {
         case 'preco':
-          // VALOR: + caro para + barato (descendente por padrão)
           final valorA = a['value']?.toDouble() ?? 0.0;
           final valorB = b['value']?.toDouble() ?? 0.0;
-          comparacao = valorB.compareTo(valorA); // Invertido para descendente
+          comparacao = valorB.compareTo(valorA);
           break;
           
         case 'vencimento':
-          // VENCIMENTO: vencidas primeiro, depois por data de vencimento
           final bool vencidaA = a['esta_vencida'] ?? false;
           final bool vencidaB = b['esta_vencida'] ?? false;
           
           if (vencidaA && !vencidaB) {
-            comparacao = -1; // A vencida vem antes de B não vencida
+            comparacao = -1;
           } else if (!vencidaA && vencidaB) {
-            comparacao = 1; // B vencida vem antes de A não vencida
+            comparacao = 1;
           } else {
-            // Ambos vencidas ou ambos não vencidas, ordenar por data
             final vencA = a['end_date'] ?? '';
             final vencB = b['end_date'] ?? '';
             
             if (vencidaA && vencidaB) {
-              // Ambas vencidas: mais vencida (data mais antiga) primeiro
               comparacao = vencA.compareTo(vencB);
             } else if (!vencidaA && !vencidaB) {
-              // Ambas não vencidas: vencimento mais próximo primeiro
               comparacao = vencA.compareTo(vencB);
             } else {
-              // Uma tem data e outra não
               if (vencA.isEmpty && vencB.isNotEmpty) return 1;
               if (vencA.isNotEmpty && vencB.isEmpty) return -1;
             }
@@ -179,42 +168,36 @@ class _TelaDividasState extends State<TelaDividas> {
           
         case 'data_inicio':
         default:
-          // DATA INICIAL: mais velho para mais novo (ascendente)
           final inicioA = a['init_date'] ?? '';
           final inicioB = b['init_date'] ?? '';
-          comparacao = inicioA.compareTo(inicioB); // Ascendente
+          comparacao = inicioA.compareTo(inicioB);
           break;
       }
       
-      // Se ordenarAscendente é true, inverte a ordenação
       return ordenarAscendente ? -comparacao : comparacao;
     });
     
     setState(() {
       dividas = listaParaOrdenar;
-      // Reaplicar filtro de busca se houver
       aplicarFiltroBusca();
     });
   }
 
   void ordenar(String tipo) {
     if (ordenarPor == tipo) {
-      // Se já está ordenando por esse tipo, inverte a direção
       ordenarAscendente = !ordenarAscendente;
     } else {
-      // Se é um novo tipo, define conforme especificação
       ordenarPor = tipo;
       
-      // Definir direção padrão conforme especificação
       switch (tipo) {
         case 'preco':
-          ordenarAscendente = false; // + caro para + barato (descendente)
+          ordenarAscendente = false;
           break;
         case 'vencimento':
-          ordenarAscendente = false; // vencidas primeiro
+          ordenarAscendente = false;
           break;
         case 'data_inicio':
-          ordenarAscendente = true; // mais velho para mais novo (ascendente)
+          ordenarAscendente = true;
           break;
       }
     }
@@ -253,10 +236,8 @@ class _TelaDividasState extends State<TelaDividas> {
     String query = searchController.text.toLowerCase();
     
     if (query.isEmpty) {
-      // Se não há busca, mostra todas as dívidas ordenadas
       filtradas = List.from(dividas);
     } else {
-      // Aplica filtro de busca
       filtradas = dividas.where((divida) {
         return divida['cliente_nome'].toString().toLowerCase().contains(query) ||
                divida['cpf'].toString().contains(query) ||
@@ -272,7 +253,7 @@ class _TelaDividasState extends State<TelaDividas> {
     });
   }
 
-  // Máscara para CPF (mantida para exibição)
+  // Máscara para CPF
   String _aplicarMascaraCPF(String cpf) {
     cpf = cpf.replaceAll(RegExp(r'[^\d]'), '');
     
@@ -336,31 +317,14 @@ class _TelaDividasState extends State<TelaDividas> {
         'encryption_key': 'default'
       };
 
-      if (dividaParaEditar == null) {
-        await supabase.from('debts').insert(data);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Dívida de R\$${valor.toStringAsFixed(2)} cadastrada!'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      } else {
-        // Ao editar, manter a data inicial original (não alterar)
-        data['init_date'] = dividaParaEditar!['init_date'];
-        
-        await supabase
-            .from('debts')
-            .update(data)
-            .eq('id', dividaParaEditar!['id']);
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Dívida atualizada!'),
-            backgroundColor: Colors.green,
-          ),
-        );
-        dividaParaEditar = null;
-      }
+      await supabase.from('debts').insert(data);
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Dívida de R\$${valor.toStringAsFixed(2)} cadastrada!'),
+          backgroundColor: Colors.green,
+        ),
+      );
 
       limparCamposDivida();
       await atualizarDividasRapido();
@@ -383,98 +347,6 @@ class _TelaDividasState extends State<TelaDividas> {
     dataVencimento = null;
     clienteSelecionadoId = null;
     clienteSelecionadoNome = null;
-    dividaParaEditar = null;
-  }
-
-  Future<void> deletarDivida(int id, double valor, String clienteNome) async {
-    final confirmar = await showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text(
-          "Excluir Dívida",
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: Colors.red,
-          ),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Deseja excluir a dívida:', style: TextStyle(color: Colors.grey)),
-            const SizedBox(height: 8),
-            Text(
-              'Cliente: $clienteNome',
-              style: const TextStyle(
-                fontWeight: FontWeight.w600,
-                fontSize: 16,
-                color: Colors.black87,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Valor: R\$${valor.toStringAsFixed(2)}',
-              style: const TextStyle(
-                color: Colors.red,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.orange.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.orange.withOpacity(0.3)),
-              ),
-              child: const Text(
-                'Atenção: Esta ação não pode ser desfeita.',
-                style: TextStyle(fontSize: 12, color: Colors.orange),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text("Cancelar", style: TextStyle(color: Colors.blue)),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
-            ),
-            child: const Text("Excluir"),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmar == true) {
-      try {
-        // Primeiro excluir pagamentos relacionados
-        await supabase.from('payments').delete().eq('debts_id', id);
-        // Depois excluir a dívida
-        await supabase.from('debts').delete().eq('id', id);
-        
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Dívida excluída com sucesso!'),
-            backgroundColor: Colors.green,
-          ),
-        );
-        
-        await atualizarDividasRapido();
-      } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erro ao excluir: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
   }
 
   Future<void> _selecionarData(BuildContext context, bool isInicio) async {
@@ -579,23 +451,11 @@ class _TelaDividasState extends State<TelaDividas> {
     );
   }
 
-  void abrirDialogCadastroDivida({Map<String, dynamic>? divida}) {
-    if (divida != null) {
-      valorController.text = divida['value'].toString();
-      valorInicialController.text = divida['init_value'].toString();
-      clienteSelecionadoId = divida['cpf'];
-      clienteSelecionadoNome = getNomeClientePorCpf(divida['cpf']) ?? 'Cliente sem nome';
-      dataInicioController.text = divida['init_date'];
-      if (divida['end_date'] != null) {
-        dataVencimentoController.text = divida['end_date'];
-      }
-      dividaParaEditar = divida;
-    } else {
-      limparCamposDivida();
-      // Definir data atual como padrão para nova dívida
-      final now = DateTime.now();
-      dataInicioController.text = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
-    }
+  void abrirDialogCadastroDivida() {
+    limparCamposDivida();
+    // Definir data atual como padrão para nova dívida
+    final now = DateTime.now();
+    dataInicioController.text = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
 
     showDialog(
       context: context,
@@ -610,9 +470,9 @@ class _TelaDividasState extends State<TelaDividas> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  divida == null ? 'Nova Dívida' : 'Editar Dívida',
-                  style: const TextStyle(
+                const Text(
+                  'Nova Dívida',
+                  style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
                     color: Colors.blue,
@@ -716,10 +576,10 @@ class _TelaDividasState extends State<TelaDividas> {
                 ),
                 const SizedBox(height: 15),
                 
-                // Data de Início (readonly quando editar)
+                // Data de Início
                 TextField(
                   controller: dataInicioController,
-                  readOnly: divida != null, // Não pode editar a data inicial quando editar
+                  readOnly: true,
                   decoration: InputDecoration(
                     labelText: 'Data de Início*',
                     prefixIcon: const Icon(Icons.calendar_today, color: Colors.blue),
@@ -731,12 +591,10 @@ class _TelaDividasState extends State<TelaDividas> {
                       borderRadius: BorderRadius.circular(12),
                       borderSide: const BorderSide(color: Colors.blue, width: 2),
                     ),
-                    suffixIcon: divida == null
-                        ? IconButton(
-                            icon: const Icon(Icons.calendar_month),
-                            onPressed: () => _selecionarData(context, true),
-                          )
-                        : null,
+                    suffixIcon: IconButton(
+                      icon: const Icon(Icons.calendar_month),
+                      onPressed: () => _selecionarData(context, true),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 15),
@@ -940,13 +798,13 @@ class _TelaDividasState extends State<TelaDividas> {
                             ),
                           );
                         }).toList(),
-                      ], // <-- AQUI ESTÁ CORRETO - fecha o array items
+                      ],
                       onChanged: (String? newValue) {
                         setState(() {
                           formaPagamentoSelecionada = newValue;
                         });
                       },
-                    ), // <-- AQUI fecha o DropdownButton
+                    ),
                   ),
                 ),
                 const SizedBox(height: 25),
@@ -1020,27 +878,21 @@ class _TelaDividasState extends State<TelaDividas> {
     }
 
     try {
-      // Baseado no schema, a tabela payments tem 'method' e 'type'
       final novoPagamento = {
-        'cpf': dividaSelecionadaParaPagamento!['cpf'], // CPF do cliente
+        'cpf': dividaSelecionadaParaPagamento!['cpf'],
         'debts_id': dividaSelecionadaParaPagamento!['id'],
         'value': valorPagamento,
         'date': dataText,
-        'method': formaPagamentoSelecionada, // Usando 'method' conforme schema
-        'type': 'pagamento', // Valor fixo para 'type' conforme schema
+        'method': formaPagamentoSelecionada,
+        'type': 'pagamento',
         'encryption_key': 'default'
       };
-
-      print('Registrando pagamento: $novoPagamento');
       
       await supabase.from('payments').insert(novoPagamento);
       
-      // Calcular novo valor da dívida
       final novoValorDivida = valorDivida - valorPagamento;
       
-      // Verificar se a dívida foi totalmente paga (valor <= 0)
       if (novoValorDivida <= 0) {
-        // Dívida zerada - deletar do banco de dados
         await supabase.from('debts').delete().eq('id', dividaSelecionadaParaPagamento!['id']);
         
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1051,7 +903,6 @@ class _TelaDividasState extends State<TelaDividas> {
           ),
         );
       } else {
-        // Apenas atualizar o valor da dívida
         await supabase
             .from('debts')
             .update({'value': novoValorDivida})
@@ -1069,7 +920,6 @@ class _TelaDividasState extends State<TelaDividas> {
       await atualizarDividasRapido();
       
     } catch (e) {
-      print('Erro detalhado ao registrar pagamento: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Erro ao registrar pagamento: $e'),
@@ -1098,7 +948,6 @@ class _TelaDividasState extends State<TelaDividas> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Título
                   const Center(
                     child: Text(
                       'Detalhes da Dívida',
@@ -1113,7 +962,6 @@ class _TelaDividasState extends State<TelaDividas> {
                   
                   const SizedBox(height: 20),
                   
-                  // Informações básicas
                   Text(
                     "Cliente: ${divida['cliente_nome']}",
                     style: const TextStyle(
@@ -1192,46 +1040,7 @@ class _TelaDividasState extends State<TelaDividas> {
                     ),
                   ),
                   
-                  const SizedBox(height: 15),
-                  
-                  // Botões de ação
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      ElevatedButton.icon(
-                        onPressed: () {
-                          Navigator.pop(context);
-                          abrirDialogCadastroDivida(divida: divida);
-                        },
-                        icon: const Icon(Icons.edit, size: 20),
-                        label: const Text("Editar"),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                      ),
-                      ElevatedButton.icon(
-                        onPressed: () {
-                          Navigator.pop(context);
-                          deletarDivida(divida['id'], divida['value']?.toDouble() ?? 0.0, divida['cliente_nome']);
-                        },
-                        icon: const Icon(Icons.delete, size: 20),
-                        label: const Text("Excluir"),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 20),
                 ],
               ),
             ),
@@ -1344,7 +1153,7 @@ class _TelaDividasState extends State<TelaDividas> {
             
             const SizedBox(height: 10),
             
-            // Linha 3: Botões de ação
+            // Linha 3: Botão de Pagamento APENAS
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
@@ -1359,40 +1168,6 @@ class _TelaDividasState extends State<TelaDividas> {
                     icon: const Icon(Icons.payments, size: 18),
                     color: Colors.green,
                     onPressed: () => abrirDialogRegistrarPagamento(divida),
-                    padding: EdgeInsets.zero,
-                  ),
-                ),
-                
-                const SizedBox(width: 8),
-                
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: Colors.blue.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                  child: IconButton(
-                    icon: const Icon(Icons.edit, size: 18),
-                    color: Colors.blue,
-                    onPressed: () => abrirDialogCadastroDivida(divida: divida),
-                    padding: EdgeInsets.zero,
-                  ),
-                ),
-                
-                const SizedBox(width: 8),
-                
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: Colors.red.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                  child: IconButton(
-                    icon: const Icon(Icons.delete, size: 18),
-                    color: Colors.red,
-                    onPressed: () => deletarDivida(divida['id'], valor, divida['cliente_nome']),
                     padding: EdgeInsets.zero,
                   ),
                 ),
@@ -1424,7 +1199,6 @@ class _TelaDividasState extends State<TelaDividas> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ✅ 1. BARRA DE PESQUISA (TOPO)
               const SizedBox(height: 15),
               Padding(
                 padding: const EdgeInsets.all(8.0),
@@ -1443,7 +1217,6 @@ class _TelaDividasState extends State<TelaDividas> {
                 ),
               ),
               
-              // ✅ 2. TÍTULO "ORDENAR"
               const SizedBox(height: 10),
               Container(
                 width: double.infinity,
@@ -1472,7 +1245,6 @@ class _TelaDividasState extends State<TelaDividas> {
                 ),
               ),
               
-              // ✅ 3. BOTÕES DE ORDENAR (APRIMORADOS)
               const SizedBox(height: 15),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -1486,7 +1258,6 @@ class _TelaDividasState extends State<TelaDividas> {
                 ),
               ),
               
-              // ✅ 4. RESUMO DE DÍVIDAS
               const SizedBox(height: 20),
               Container(
                 padding: const EdgeInsets.all(16),
@@ -1526,7 +1297,6 @@ class _TelaDividasState extends State<TelaDividas> {
                 ),
               ),
               
-              // ✅ 5. TÍTULO "DÍVIDAS"
               const SizedBox(height: 20),
               Row(
                 children: [
@@ -1558,7 +1328,6 @@ class _TelaDividasState extends State<TelaDividas> {
               
               const SizedBox(height: 10),
               
-              // ✅ 6. LISTA DE DÍVIDAS
               Expanded(
                 child: loading
                     ? const Center(
@@ -1644,12 +1413,12 @@ class _TelaDividasState extends State<TelaDividas> {
           if (i == 0) {
             redirect(
               context,
-              TelaClientes(users: widget.users),
+              TelaClientesCaixa(users: widget.users),
             );
           } else if (i == 1) {
             redirect(
               context,
-              HomeGerente(users: widget.users),
+              HomeCaixa(users: widget.users),
             );
           }
         },

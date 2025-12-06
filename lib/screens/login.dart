@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_farmacia/utils/utils.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:flutter_farmacia/screens/Gerente/home.dart';
+import 'package:flutter_farmacia/screens/Gerente/home.dart'; 
 import 'package:flutter_farmacia/screens/Caixa/home.dart';
 class Login extends StatefulWidget {
   const Login({super.key});

@@ -1,0 +1,33 @@
+name: flutter_farmacia
+description: Projeto Farmácia com Supabase
+publish_to: "none"
+
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  flutter_dotenv: ^5.1.0
+  convex_bottom_bar: ^3.2.0
+  supabase_flutter: ^2.10.3
+  cupertino_icons: ^1.0.8
+  url_launcher: ^6.1.10
+  font_awesome_flutter: ^10.4.0
+
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/.env
+  #   - assets/images/

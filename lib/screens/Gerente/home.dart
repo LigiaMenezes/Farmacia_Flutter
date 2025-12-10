@@ -573,26 +573,6 @@ class _HomeGerenteState extends State<HomeGerente> {
   }
 
   // Widget para cabeçalho dos funcionários com botão de refresh
-  Widget _buildFuncionariosHeader() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        // Botão de atualização rápida
-        IconButton(
-          onPressed: refreshingFuncionarios ? null : atualizarFuncionariosRapido,
-          icon: refreshingFuncionarios
-              ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Icon(Icons.refresh),
-          color: Colors.blue,
-          tooltip: 'Atualizar lista',
-        ),
-      ],
-    );
-  }
 
   int _navIndex = 1;
 
@@ -653,8 +633,6 @@ Widget build(BuildContext context) {
                   ),
                   
                   const SizedBox(height: 10),
-                  
-                  _buildFuncionariosHeader(),
                   
                   const SizedBox(height: 10),
                   

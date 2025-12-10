@@ -823,19 +823,40 @@ class _TelaClientesState extends State<TelaClientesCaixa> {
             children: [
               const SizedBox(height: 15),
               
-              // Campo de busca
-              TextField(
-                controller: searchController,
-                decoration: InputDecoration(
-                  hintText: 'Pesquisar cliente por nome, CPF ou telefone...',
-                  prefixIcon: const Icon(Icons.search, color: Colors.grey),
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(25),
-                    borderSide: const BorderSide(color: Colors.blue),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: searchController,
+                      decoration: InputDecoration(
+                        hintText: 'Pesquisar cliente por nome, CPF ou telefone...',
+                        prefixIcon: const Icon(Icons.search, color: Colors.grey),
+                        filled: true,
+                        fillColor: Colors.white,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(25),
+                          borderSide: const BorderSide(color: Colors.blue),
+                        ),
+                      ),
+                    ),
                   ),
-                ),
+
+                  const SizedBox(width: 5), // pequena separação visual
+
+                  IconButton(
+                    onPressed: refreshingClientes ? null : atualizarClientesRapido,
+                    iconSize: 32,
+                    icon: refreshingClientes
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.refresh),
+                    color: Colors.blue,
+                    tooltip: 'Atualizar lista',
+                  ),
+                ],
               ),
               
               const SizedBox(height: 25),
@@ -876,18 +897,6 @@ class _TelaClientesState extends State<TelaClientesCaixa> {
                       thickness: 2,
                       indent: 10,
                     ),
-                  ),
-                  IconButton(
-                    onPressed: refreshingClientes ? null : atualizarClientesRapido,
-                    icon: refreshingClientes
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.refresh),
-                    color: Colors.blue,
-                    tooltip: 'Atualizar lista',
                   ),
                 ],
               ),

@@ -1486,48 +1486,9 @@ class _TelaDividasState extends State<TelaDividas> {
                 ),
               ),
               
-              // ✅ 4. RESUMO DE DÍVIDAS
+
               const SizedBox(height: 20),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.grey.withOpacity(0.1),
-                      blurRadius: 8,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    _buildResumoItem(
-                      'Total',
-                      'R\$${valorTotal.toStringAsFixed(2)}',
-                      Icons.attach_money,
-                      Colors.red,
-                    ),
-                    _buildResumoItem(
-                      'Dívidas',
-                      filtradas.length.toString(),
-                      Icons.list_alt,
-                      Colors.blue,
-                    ),
-                    _buildResumoItem(
-                      'Vencidas',
-                      dividasVencidas.toString(),
-                      Icons.warning,
-                      Colors.orange,
-                    ),
-                  ],
-                ),
-              ),
               
-              // ✅ 5. TÍTULO "DÍVIDAS"
-              const SizedBox(height: 20),
               Row(
                 children: [
                   Expanded(

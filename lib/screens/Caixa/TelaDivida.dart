@@ -1272,29 +1272,7 @@ class _TelaDividasCaixaState extends State<TelaDividasCaixa> {
                     ),
                   ],
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    _buildResumoItem(
-                      'Total',
-                      'R\$${valorTotal.toStringAsFixed(2)}',
-                      Icons.attach_money,
-                      Colors.red,
-                    ),
-                    _buildResumoItem(
-                      'Dívidas',
-                      filtradas.length.toString(),
-                      Icons.list_alt,
-                      Colors.blue,
-                    ),
-                    _buildResumoItem(
-                      'Vencidas',
-                      dividasVencidas.toString(),
-                      Icons.warning,
-                      Colors.orange,
-                    ),
-                  ],
-                ),
+                
               ),
               
               const SizedBox(height: 20),

@@ -222,14 +222,13 @@ class _HomeCaixaState extends State<HomeCaixa> {
   // Widget para cabeçalho com botão de refresh
   Widget _buildHeader() {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        // Título
-        const Expanded(
+        Expanded(
           child: Divider(
             color: Colors.blue,
             thickness: 2,
-            endIndent: 10, // Espaço à direita antes da linha
+            endIndent: 10, // Espaço à direita da linha
           ),
         ),
         const Text(
@@ -240,30 +239,17 @@ class _HomeCaixaState extends State<HomeCaixa> {
             color: Colors.blue,
           ),
         ),
-        const Expanded(
+        Expanded(
           child: Divider(
             color: Colors.blue,
             thickness: 2,
-            endIndent: 10, // Espaço à direita antes da linha
+            indent: 10, // Espaço à esquerda da linha
           ),
-        ),
-        
-        // Botão de atualização rápida
-        IconButton(
-          onPressed: loading ? null : atualizarDadosRapido,
-          icon: loading
-              ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Icon(Icons.refresh),
-          color: Colors.blue,
-          tooltip: 'Atualizar dados',
         ),
       ],
     );
   }
+
 
   // Widget para o botão SAIR na parte inferior
   Widget _buildSairButton() {

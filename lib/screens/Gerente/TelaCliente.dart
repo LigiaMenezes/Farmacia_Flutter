@@ -1076,6 +1076,7 @@ class _TelaClientesState extends State<TelaClientes> {
       ),
 
       bottomNavigationBar: ConvexAppBar(
+        backgroundColor: Colors.red, 
         items: const [
           TabItem(icon: Icons.people, title: 'Clientes'),
           TabItem(icon: Icons.home, title: 'Home'),

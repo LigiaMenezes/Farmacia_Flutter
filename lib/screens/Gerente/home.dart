@@ -703,6 +703,7 @@ Widget build(BuildContext context) {
 
 // No home.dart:
 bottomNavigationBar: ConvexAppBar(
+  backgroundColor: Colors.red, 
   items: const [
     TabItem(icon: Icons.people, title: 'Clientes'),
     TabItem(icon: Icons.home, title: 'Home'),

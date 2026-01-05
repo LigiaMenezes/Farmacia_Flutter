@@ -474,7 +474,7 @@ class _TelaDividasCaixaState extends State<TelaDividasCaixa> {
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
-                    color: Colors.blue,
+                    color: Colors.black,
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -505,7 +505,7 @@ class _TelaDividasCaixaState extends State<TelaDividasCaixa> {
                       decoration: InputDecoration(
                         labelText: 'Cliente*',
                         hintText: 'Digite o nome do cliente',
-                        prefixIcon: const Icon(Icons.person_search, color: Colors.blue),
+                        prefixIcon: const Icon(Icons.person_search, color: Colors.black),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -521,14 +521,14 @@ class _TelaDividasCaixaState extends State<TelaDividasCaixa> {
                   keyboardType: TextInputType.numberWithOptions(decimal: true),
                   decoration: InputDecoration(
                     labelText: 'Valor Inicial*',
-                    prefixIcon: const Icon(Icons.attach_money, color: Colors.blue),
+                    prefixIcon: const Icon(Icons.attach_money, color: Colors.black),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide(color: Colors.grey.shade300),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Colors.blue, width: 2),
+                      borderSide: const BorderSide(color: Colors.black, width: 2),
                     ),
                   ),
                 ),
@@ -540,14 +540,14 @@ class _TelaDividasCaixaState extends State<TelaDividasCaixa> {
                   keyboardType: TextInputType.numberWithOptions(decimal: true),
                   decoration: InputDecoration(
                     labelText: 'Valor Atual*',
-                    prefixIcon: const Icon(Icons.attach_money, color: Colors.blue),
+                    prefixIcon: const Icon(Icons.attach_money, color: Colors.black),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide(color: Colors.grey.shade300),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Colors.blue, width: 2),
+                      borderSide: const BorderSide(color: Colors.black, width: 2),
                     ),
                   ),
                 ),
@@ -559,14 +559,14 @@ class _TelaDividasCaixaState extends State<TelaDividasCaixa> {
                   readOnly: true,
                   decoration: InputDecoration(
                     labelText: 'Data de Início*',
-                    prefixIcon: const Icon(Icons.calendar_today, color: Colors.blue),
+                    prefixIcon: const Icon(Icons.calendar_today, color: Colors.black),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide(color: Colors.grey.shade300),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Colors.blue, width: 2),
+                      borderSide: const BorderSide(color: Colors.black, width: 2),
                     ),
                     suffixIcon: IconButton(
                       icon: const Icon(Icons.calendar_month),
@@ -582,14 +582,14 @@ class _TelaDividasCaixaState extends State<TelaDividasCaixa> {
                   readOnly: true,
                   decoration: InputDecoration(
                     labelText: 'Data de Vencimento (opcional)',
-                    prefixIcon: const Icon(Icons.calendar_today, color: Colors.blue),
+                    prefixIcon: const Icon(Icons.calendar_today, color: Colors.black),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide(color: Colors.grey.shade300),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Colors.blue, width: 2),
+                      borderSide: const BorderSide(color: Colors.black, width: 2),
                     ),
                     suffixIcon: IconButton(
                       icon: const Icon(Icons.calendar_month),
@@ -613,7 +613,7 @@ class _TelaDividasCaixaState extends State<TelaDividasCaixa> {
                         salvarDivida();
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue,
+                        backgroundColor: Colors.black,
                         foregroundColor: Colors.white,
                       ),
                       child: const Text('Salvar'),
@@ -1169,6 +1169,7 @@ class _TelaDividasCaixaState extends State<TelaDividasCaixa> {
         onPressed: () => abrirDialogCadastroDivida(),
       ),
 
+
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -1229,7 +1230,7 @@ class _TelaDividasCaixaState extends State<TelaDividasCaixa> {
                   children: [
                     _ordenarBotao("VALOR", 'preco', Icons.attach_money, Colors.red),
                     _ordenarBotao("VENCIMENTO", 'vencimento', Icons.calendar_today, Colors.green),
-                    _ordenarBotao("DATA INICIAL", 'data_inicio', Icons.calendar_month, Colors.blue),
+                    _ordenarBotao("DATA INICIAL", 'data_inicio', Icons.calendar_month, Colors.black),
                   ],
                 ),
               ),
@@ -1289,7 +1290,7 @@ class _TelaDividasCaixaState extends State<TelaDividasCaixa> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             CircularProgressIndicator(
-                              color: Colors.blue,
+                              color: Colors.black,
                               strokeWidth: 3,
                             ),
                             SizedBox(height: 15),
@@ -1304,7 +1305,7 @@ class _TelaDividasCaixaState extends State<TelaDividasCaixa> {
                         ),
                       )
                     : refreshingDividas
-                        ? const Center(child: CircularProgressIndicator(color: Colors.blue))
+                        ? const Center(child: CircularProgressIndicator(color: Colors.black))
                         : filtradas.isEmpty
                             ? Center(
                                 child: Column(
@@ -1340,7 +1341,7 @@ class _TelaDividasCaixaState extends State<TelaDividasCaixa> {
                                 ),
                               )
                             : RefreshIndicator(
-                                color: Colors.blue,
+                                color: Colors.black,
                                 onRefresh: carregarDividas,
                                 child: ListView.builder(
                                   itemCount: filtradas.length,

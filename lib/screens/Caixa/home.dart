@@ -227,7 +227,7 @@ class _HomeCaixaState extends State<HomeCaixa> {
       children: [
         Expanded(
           child: Divider(
-            color: Colors.blue,
+            color: Colors.red,
             thickness: 2,
             endIndent: 10, // Espaço à direita da linha
           ),
@@ -237,12 +237,12 @@ class _HomeCaixaState extends State<HomeCaixa> {
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
-            color: Colors.blue,
+            color: Colors.red,
           ),
         ),
         Expanded(
           child: Divider(
-            color: Colors.blue,
+            color: Colors.red,
             thickness: 2,
             indent: 10, // Espaço à esquerda da linha
           ),
@@ -252,44 +252,51 @@ class _HomeCaixaState extends State<HomeCaixa> {
   }
 
 
-  // Widget para o botão SAIR na parte inferior
   Widget _buildSairButton() {
-    return Container(
-      margin: const EdgeInsets.all(16),
-      child: ElevatedButton(
-        onPressed: () async {
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.remove('username');
-          await prefs.remove('password');
-          supabase.auth.signOut().then((_) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => const Login()),
-            );
-          });
-        },
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.red,
-          foregroundColor: Colors.white,
-          minimumSize: const Size(double.infinity, 50),
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          margin: const EdgeInsets.all(16),
+          child: ElevatedButton(
+            onPressed: () async {
+              final prefs = await SharedPreferences.getInstance();
+              await prefs.remove('username');
+              await prefs.remove('password');
+
+              await supabase.auth.signOut();
+
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => const Login()),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+              minimumSize: const Size(double.infinity, 50),
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              elevation: 3,
+              shadowColor: Colors.red.withOpacity(0.3),
+            ),
+            child: const Text(
+              'SAIR',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1.2,
+              ),
+            ),
           ),
-          elevation: 3,
-          shadowColor: Colors.red.withOpacity(0.3),
         ),
-        child: const Text(
-          'SAIR',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 1.2,
-          ),
-        ),
-      ),
+        const SizedBox(height: 10),
+      ],
     );
   }
+
 
   int _navIndex = 1;
 

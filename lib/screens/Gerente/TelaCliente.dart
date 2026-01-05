@@ -358,7 +358,7 @@ class _TelaClientesState extends State<TelaClientes> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text("Cancelar", style: TextStyle(color: Colors.blue)),
+            child: const Text("Cancelar", style: TextStyle(color: Colors.black)),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
@@ -431,7 +431,7 @@ class _TelaClientesState extends State<TelaClientes> {
                   style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
-                    color: Colors.blue,
+                    color: Colors.black,
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -509,7 +509,7 @@ class _TelaClientesState extends State<TelaClientes> {
                         salvarCliente();
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue,
+                        backgroundColor: Colors.black,
                         foregroundColor: Colors.white,
                       ),
                       child: const Text('Salvar'),
@@ -541,14 +541,14 @@ class _TelaClientesState extends State<TelaClientes> {
       inputFormatters: inputFormatters,
       decoration: InputDecoration(
         labelText: label,
-        prefixIcon: Icon(icon, color: Colors.blue),
+        prefixIcon: Icon(icon, color: Colors.black),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: Colors.grey.shade300),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Colors.blue, width: 2),
+          borderSide: const BorderSide(color: Colors.black, width: 2),
         ),
       ),
     );
@@ -579,7 +579,7 @@ class _TelaClientesState extends State<TelaClientes> {
                       style: const TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
-                        color: Colors.blue,
+                        color: Colors.black,
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -663,7 +663,7 @@ class _TelaClientesState extends State<TelaClientes> {
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
-                            color: Colors.blue,
+                            color: Colors.black,
                           ),
                         ),
                         const SizedBox(height: 10),
@@ -727,7 +727,7 @@ class _TelaClientesState extends State<TelaClientes> {
                         icon: const Icon(Icons.edit, size: 20),
                         label: const Text("Editar"),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue,
+                          backgroundColor: Colors.black,
                           foregroundColor: Colors.white,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -765,7 +765,7 @@ class _TelaClientesState extends State<TelaClientes> {
   Widget _buildInfoItem(String label, String value, IconData icon) {
     return Row(
       children: [
-        Icon(icon, size: 20, color: Colors.blue),
+        Icon(icon, size: 20, color: Colors.black),
         const SizedBox(width: 10),
         Expanded(
           child: Column(
@@ -881,12 +881,12 @@ class _TelaClientesState extends State<TelaClientes> {
                       width: 36,
                       height: 36,
                       decoration: BoxDecoration(
-                        color: Colors.blue.withOpacity(0.1),
+                        color: Colors.black.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(18),
                       ),
                       child: IconButton(
                         icon: const Icon(Icons.edit, size: 18),
-                        color: Colors.blue,
+                        color: Colors.black,
                         onPressed: () => abrirDialogCadastroCliente(cliente: cliente),
                         padding: EdgeInsets.zero,
                       ),
@@ -951,7 +951,7 @@ class _TelaClientesState extends State<TelaClientes> {
                         fillColor: Colors.white,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(25),
-                          borderSide: const BorderSide(color: Colors.blue),
+                          borderSide: const BorderSide(color: Colors.black),
                         ),
                       ),
                     ),
@@ -969,7 +969,7 @@ class _TelaClientesState extends State<TelaClientes> {
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
                         : const Icon(Icons.refresh),
-                    color: Colors.blue,
+                    color: Colors.red,
                     tooltip: 'Atualizar lista',
                   ),
                 ],
@@ -984,7 +984,7 @@ class _TelaClientesState extends State<TelaClientes> {
                 children: [
                   const Expanded(
                     child: Divider(
-                      color: Colors.blue,
+                      color: Colors.red,
                       thickness: 2,
                       endIndent: 10,
                     ),
@@ -994,7 +994,7 @@ class _TelaClientesState extends State<TelaClientes> {
                       const Text(
                         "CLIENTES",
                         style: TextStyle(
-                          color: Colors.blue,
+                          color: Colors.red,
                           fontWeight: FontWeight.bold,
                           fontSize: 18,
                         ),
@@ -1010,7 +1010,7 @@ class _TelaClientesState extends State<TelaClientes> {
                   ),
                   const Expanded(
                     child: Divider(
-                      color: Colors.blue,
+                      color: Colors.red,
                       thickness: 2,
                       indent: 10,
                     ),

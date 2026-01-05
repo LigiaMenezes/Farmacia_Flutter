@@ -436,7 +436,7 @@ class _TelaDividasState extends State<TelaDividas> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text("Cancelar", style: TextStyle(color: Colors.blue)),
+            child: const Text("Cancelar", style: TextStyle(color: Colors.black)),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
@@ -614,7 +614,7 @@ class _TelaDividasState extends State<TelaDividas> {
                   style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
-                    color: Colors.blue,
+                    color: Colors.black,
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -645,7 +645,7 @@ class _TelaDividasState extends State<TelaDividas> {
                       decoration: InputDecoration(
                         labelText: 'Cliente*',
                         hintText: 'Digite o nome do cliente',
-                        prefixIcon: const Icon(Icons.person_search, color: Colors.blue),
+                        prefixIcon: const Icon(Icons.person_search, color: Colors.black),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -661,14 +661,14 @@ class _TelaDividasState extends State<TelaDividas> {
                   keyboardType: TextInputType.numberWithOptions(decimal: true),
                   decoration: InputDecoration(
                     labelText: 'Valor Inicial*',
-                    prefixIcon: const Icon(Icons.attach_money, color: Colors.blue),
+                    prefixIcon: const Icon(Icons.attach_money, color: Colors.black),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide(color: Colors.grey.shade300),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Colors.blue, width: 2),
+                      borderSide: const BorderSide(color: Colors.black, width: 2),
                     ),
                   ),
                 ),
@@ -680,14 +680,14 @@ class _TelaDividasState extends State<TelaDividas> {
                   keyboardType: TextInputType.numberWithOptions(decimal: true),
                   decoration: InputDecoration(
                     labelText: 'Valor Atual*',
-                    prefixIcon: const Icon(Icons.attach_money, color: Colors.blue),
+                    prefixIcon: const Icon(Icons.attach_money, color: Colors.black),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide(color: Colors.grey.shade300),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Colors.blue, width: 2),
+                      borderSide: const BorderSide(color: Colors.black, width: 2),
                     ),
                   ),
                 ),
@@ -699,14 +699,14 @@ class _TelaDividasState extends State<TelaDividas> {
                   readOnly: divida != null, // Não pode editar a data inicial quando editar
                   decoration: InputDecoration(
                     labelText: 'Data de Início*',
-                    prefixIcon: const Icon(Icons.calendar_today, color: Colors.blue),
+                    prefixIcon: const Icon(Icons.calendar_today, color: Colors.black),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide(color: Colors.grey.shade300),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Colors.blue, width: 2),
+                      borderSide: const BorderSide(color: Colors.black, width: 2),
                     ),
                     suffixIcon: divida == null
                         ? IconButton(
@@ -724,14 +724,14 @@ class _TelaDividasState extends State<TelaDividas> {
                   readOnly: true,
                   decoration: InputDecoration(
                     labelText: 'Data de Vencimento (opcional)',
-                    prefixIcon: const Icon(Icons.calendar_today, color: Colors.blue),
+                    prefixIcon: const Icon(Icons.calendar_today, color: Colors.black),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide(color: Colors.grey.shade300),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Colors.blue, width: 2),
+                      borderSide: const BorderSide(color: Colors.black, width: 2),
                     ),
                     suffixIcon: IconButton(
                       icon: const Icon(Icons.calendar_month),
@@ -755,7 +755,7 @@ class _TelaDividasState extends State<TelaDividas> {
                         salvarDivida();
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue,
+                        backgroundColor: Colors.black,
                         foregroundColor: Colors.white,
                       ),
                       child: const Text('Salvar'),
@@ -1182,7 +1182,7 @@ class _TelaDividasState extends State<TelaDividas> {
                         icon: const Icon(Icons.edit, size: 20),
                         label: const Text("Editar"),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue,
+                          backgroundColor: Colors.black,
                           foregroundColor: Colors.white,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -1345,12 +1345,12 @@ class _TelaDividasState extends State<TelaDividas> {
                   width: 36,
                   height: 36,
                   decoration: BoxDecoration(
-                    color: Colors.blue.withOpacity(0.1),
+                    color: Colors.black.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(18),
                   ),
                   child: IconButton(
                     icon: const Icon(Icons.edit, size: 18),
-                    color: Colors.blue,
+                    color: Colors.black,
                     onPressed: () => abrirDialogCadastroDivida(divida: divida),
                     padding: EdgeInsets.zero,
                   ),
@@ -1393,6 +1393,8 @@ class _TelaDividasState extends State<TelaDividas> {
         child: const Icon(Icons.add, color: Colors.white),
         onPressed: () => abrirDialogCadastroDivida(),
       ),
+
+      
 
       body: SafeArea(
         child: Padding(
@@ -1457,7 +1459,7 @@ class _TelaDividasState extends State<TelaDividas> {
                   children: [
                     _ordenarBotao("VALOR", 'preco', Icons.attach_money, Colors.red),
                     _ordenarBotao("VENCIMENTO", 'vencimento', Icons.calendar_today, Colors.green),
-                    _ordenarBotao("DATA INICIAL", 'data_inicio', Icons.calendar_month, Colors.blue),
+                    _ordenarBotao("DATA INICIAL", 'data_inicio', Icons.calendar_month, Colors.black),
                   ],
                 ),
               ),
@@ -1503,7 +1505,7 @@ class _TelaDividasState extends State<TelaDividas> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             CircularProgressIndicator(
-                              color: Colors.blue,
+                              color: Colors.black,
                               strokeWidth: 3,
                             ),
                             SizedBox(height: 15),
@@ -1518,7 +1520,7 @@ class _TelaDividasState extends State<TelaDividas> {
                         ),
                       )
                     : refreshingDividas
-                        ? const Center(child: CircularProgressIndicator(color: Colors.blue))
+                        ? const Center(child: CircularProgressIndicator(color: Colors.black))
                         : filtradas.isEmpty
                             ? Center(
                                 child: Column(
@@ -1554,7 +1556,7 @@ class _TelaDividasState extends State<TelaDividas> {
                                 ),
                               )
                             : RefreshIndicator(
-                                color: Colors.blue,
+                                color: Colors.black,
                                 onRefresh: carregarDividas,
                                 child: ListView.builder(
                                   itemCount: filtradas.length,

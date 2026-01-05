@@ -611,7 +611,7 @@ Widget build(BuildContext context) {
                       children: [
                         const Expanded(
                           child: Divider(
-                            color: Colors.blue,
+                            color: Colors.red,
                             thickness: 2,
                             endIndent: 10, // Espaço à direita antes da linha
                           ),
@@ -621,12 +621,12 @@ Widget build(BuildContext context) {
                           style: TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.bold,
-                            color: Colors.blue,
+                            color: Colors.red,
                           ),
                         ),
                         const Expanded(
                           child: Divider(
-                            color: Colors.blue,
+                            color: Colors.red,
                             thickness: 2,
                             indent: 10, // Espaço à esquerda depois da linha
                           ),

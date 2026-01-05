@@ -3,6 +3,9 @@ import 'package:flutter_farmacia/utils/utils.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_farmacia/screens/Gerente/home.dart'; 
 import 'package:flutter_farmacia/screens/Caixa/home.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+
 class Login extends StatefulWidget {
   const Login({super.key});
 
@@ -11,6 +14,47 @@ class Login extends StatefulWidget {
 }
 
 class _LoginState extends State<Login> {
+
+  void initState() {
+    super.initState();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _autoLogin();
+    });
+  }
+
+  Future<void> _autoLogin() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    final username = prefs.getString('username');
+    final password = prefs.getString('password');
+
+    if (username == null || password == null) return;
+
+    setState(() => isLoading = true);
+
+    final user = await supabase
+        .from('users')
+        .select()
+        .eq('username', username)
+        .eq('password', password)
+        .maybeSingle();
+
+    setState(() => isLoading = false);
+
+    if (user != null) {
+      final position = user['position'];
+      if (position == 'gerente' || position == 'admin' || position == 'Gerente') {
+        redirect(context, HomeGerente(users: username));
+      } else if (position == 'caixa') {
+        redirect(context, HomeCaixa(users: username));
+      }
+    } else {
+      prefs.remove('username');
+      prefs.remove('password');
+    }
+  }
+
   final supabase = Supabase.instance.client;
 
   final TextEditingController usuarioController = TextEditingController();
@@ -53,6 +97,10 @@ class _LoginState extends State<Login> {
         );
         String username = response['username'];
         String position = response['position']; // gerente, caixa, etc.
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('username', usuarioController.text);
+        await prefs.setString('password', senhaController.text);
+
         if (position == "gerente" || position == "admin" || position == "Gerente") {
           redirect(context, HomeGerente(users: username));
         } else if (position == "caixa") {

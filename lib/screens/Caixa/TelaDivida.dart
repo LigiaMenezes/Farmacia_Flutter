@@ -314,7 +314,6 @@ class _TelaDividasCaixaState extends State<TelaDividasCaixa> {
         'value': valor,
         'init_date': dataInicioText,
         'end_date': dataVencimentoText.isNotEmpty ? dataVencimentoText : null,
-        'encryption_key': 'default'
       };
 
       await supabase.from('debts').insert(data);
@@ -480,61 +479,39 @@ class _TelaDividasCaixaState extends State<TelaDividasCaixa> {
                 ),
                 const SizedBox(height: 20),
                 
-                // Campo de seleção de cliente (DROPDOWN)
-                Container(
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.grey.shade300),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<String>(
-                      value: clienteSelecionadoId,
-                      isExpanded: true,
-                      hint: const Padding(
-                        padding: EdgeInsets.only(left: 12),
-                        child: Text('Selecione o Cliente*', style: TextStyle(color: Colors.grey)),
-                      ),
-                      icon: const Padding(
-                        padding: EdgeInsets.only(right: 12),
-                        child: Icon(Icons.arrow_drop_down, color: Colors.blue),
-                      ),
-                      items: [
-                        const DropdownMenuItem<String>(
-                          value: null,
-                          child: Padding(
-                            padding: EdgeInsets.only(left: 12),
-                            child: Text('Selecione o Cliente*', style: TextStyle(color: Colors.grey)),
-                          ),
+                Autocomplete<Map<String, dynamic>>(
+                  optionsBuilder: (TextEditingValue textEditingValue) {
+                    if (textEditingValue.text.isEmpty) {
+                      return const Iterable<Map<String, dynamic>>.empty();
+                    }
+
+                    return clientes.where((cliente) {
+                      final nome = cliente['name'].toString().toLowerCase();
+                      return nome.contains(textEditingValue.text.toLowerCase());
+                    });
+                  },
+                  displayStringForOption: (cliente) =>
+                      '${cliente['name']} (${_aplicarMascaraCPF(cliente['cpf'])})',
+                  onSelected: (cliente) {
+                    setState(() {
+                      clienteSelecionadoId = cliente['cpf'];
+                      clienteSelecionadoNome = cliente['name'];
+                    });
+                  },
+                  fieldViewBuilder: (context, textController, focusNode, onFieldSubmitted) {
+                    return TextField(
+                      controller: textController,
+                      focusNode: focusNode,
+                      decoration: InputDecoration(
+                        labelText: 'Cliente*',
+                        hintText: 'Digite o nome do cliente',
+                        prefixIcon: const Icon(Icons.person_search, color: Colors.blue),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                        ...clientes.map((cliente) {
-                          return DropdownMenuItem<String>(
-                            value: cliente['cpf'],
-                            child: Padding(
-                              padding: const EdgeInsets.only(left: 12),
-                              child: Text(
-                                '${cliente['name']} (${_aplicarMascaraCPF(cliente['cpf'])})',
-                                style: const TextStyle(fontSize: 16),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          );
-                        }).toList(),
-                      ],
-                      onChanged: (String? newValue) {
-                        setState(() {
-                          clienteSelecionadoId = newValue;
-                          if (newValue != null) {
-                            for (var cliente in clientes) {
-                              if (cliente['cpf'] == newValue) {
-                                clienteSelecionadoNome = cliente['name'];
-                                break;
-                              }
-                            }
-                          }
-                        });
-                      },
-                    ),
-                  ),
+                      ),
+                    );
+                  },
                 ),
                 const SizedBox(height: 15),
                 
@@ -885,7 +862,6 @@ class _TelaDividasCaixaState extends State<TelaDividasCaixa> {
         'date': dataText,
         'method': formaPagamentoSelecionada,
         'type': 'pagamento',
-        'encryption_key': 'default'
       };
       
       await supabase.from('payments').insert(novoPagamento);

@@ -248,7 +248,6 @@ class _TelaClientesState extends State<TelaClientes> {
         'cpf': cpf,
         'phone': telefone.isNotEmpty ? telefone : null,
         'endereco': endereco.isNotEmpty ? endereco : null,
-        'encryption_key': 'default'
       };
 
       if (clienteParaEditar == null) {

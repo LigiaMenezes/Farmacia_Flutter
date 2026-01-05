@@ -5,6 +5,8 @@ import 'package:flutter_farmacia/screens/login.dart';
 import 'package:convex_bottom_bar/convex_bottom_bar.dart';
 import 'package:flutter_farmacia/screens/Gerente/TelaCliente.dart';
 import 'package:flutter_farmacia/screens/Gerente/TelaDivida.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 class HomeGerente extends StatefulWidget {
   final String users;
 
@@ -115,7 +117,6 @@ class _HomeGerenteState extends State<HomeGerente> {
         'username': username,
         'password': password,
         'position': position,
-        'encryption_key': 'default'
       };
 
       if (editarFuncionarioUsername == null) {
@@ -128,7 +129,6 @@ class _HomeGerenteState extends State<HomeGerente> {
             .update({
               'password': password,
               'position': position,
-              'encryption_key': 'default',
             })
             .eq('username', editarFuncionarioUsername!);
 
@@ -491,7 +491,10 @@ class _HomeGerenteState extends State<HomeGerente> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: () {
+              onPressed: () async {
+                final prefs = await SharedPreferences.getInstance();
+                await prefs.remove('username');
+                await prefs.remove('password');
                 supabase.auth.signOut().then((_) {
                   Navigator.pushReplacement(
                     context,

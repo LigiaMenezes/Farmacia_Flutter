@@ -5,6 +5,7 @@ import 'package:flutter_farmacia/screens/login.dart';
 import 'package:convex_bottom_bar/convex_bottom_bar.dart';
 import 'package:flutter_farmacia/screens/Caixa/TelaCliente.dart';
 import 'package:flutter_farmacia/screens/Caixa/TelaDivida.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class HomeCaixa extends StatefulWidget {
   final String users;
@@ -256,7 +257,10 @@ class _HomeCaixaState extends State<HomeCaixa> {
     return Container(
       margin: const EdgeInsets.all(16),
       child: ElevatedButton(
-        onPressed: () {
+        onPressed: () async {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.remove('username');
+          await prefs.remove('password');
           supabase.auth.signOut().then((_) {
             Navigator.pushReplacement(
               context,

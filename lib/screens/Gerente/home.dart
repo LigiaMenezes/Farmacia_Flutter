@@ -332,7 +332,7 @@ class _HomeGerenteState extends State<HomeGerente> {
                 ),
                 child: IconButton(
                   icon: const Icon(Icons.edit, size: 18),
-                  color: Colors.blue,
+                  color: Colors.black,
                   onPressed: () => abrirDialogCadastroFuncionario(funcionario: f),
                   padding: EdgeInsets.zero,
                   visualDensity: VisualDensity.compact,

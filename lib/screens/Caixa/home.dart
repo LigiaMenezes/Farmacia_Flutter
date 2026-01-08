@@ -292,7 +292,7 @@ class _HomeCaixaState extends State<HomeCaixa> {
             ),
           ),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 15),
       ],
     );
   }

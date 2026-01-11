@@ -155,7 +155,7 @@ class _LoginState extends State<Login> {
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: const BorderSide(
-                        color: Colors.blue,
+                        color: Colors.red,
                         width: 2,
                       ),
                     ),
@@ -184,7 +184,7 @@ class _LoginState extends State<Login> {
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: const BorderSide(
-                        color: Colors.blue,
+                        color: Colors.red,
                         width: 2,
                       ),
                     ),

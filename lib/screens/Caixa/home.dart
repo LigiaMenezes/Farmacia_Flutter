@@ -1,3 +1,4 @@
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_farmacia/utils/utils.dart';
@@ -19,11 +20,14 @@ class HomeCaixa extends StatefulWidget {
 class _HomeCaixaState extends State<HomeCaixa> {
   final supabase = Supabase.instance.client;
 
+  int clientesQuitados = 0;
+  int clientesEndividados = 0;
   int totalClientes = 0;
-  int totalDividas = 0;
   double valorDividaTotal = 0.0;
 
   bool loading = true;
+  int _navIndex = 1;
+  int? _touchedIndex;
 
   @override
   void initState() {
@@ -32,136 +36,333 @@ class _HomeCaixaState extends State<HomeCaixa> {
   }
 
   Future<void> carregarDados() async {
+    if (!mounted) return;
+    
     setState(() => loading = true);
+
     try {
-      final clientes = await supabase.from('clients').select('cpf');
+      debugPrint('=== CARREGANDO DADOS ===');
+      
+      final clientes = await supabase
+          .from('clients')
+          .select('cpf, name')
+          .timeout(const Duration(seconds: 10));
+
       totalClientes = clientes.length;
+      
+      final dividas = await supabase
+          .from('debts')
+          .select('id, cpf, value, init_date, end_date')
+          .timeout(const Duration(seconds: 10));
 
-      final dividas = await supabase.from('debts').select('value');
-      totalDividas = dividas.length;
-
-      double soma = 0.0;
-      for (var d in dividas) {
-        final num? v = d['value'] is num ? d['value'] : num.tryParse('${d['value']}');
-        if (v != null) soma += v.toDouble();
+      final pagamentos = await supabase
+          .from('payments')
+          .select('debts_id, value')
+          .timeout(const Duration(seconds: 10));
+      
+      final Map<int, double> pagamentosPorDivida = {};
+      for (var pagamento in pagamentos) {
+        final debtsId = pagamento['debts_id'] as int?;
+        final value = pagamento['value'];
+        final num? v = value is num ? value : num.tryParse('$value');
+        
+        if (debtsId != null && v != null) {
+          pagamentosPorDivida[debtsId] = (pagamentosPorDivida[debtsId] ?? 0) + v.toDouble();
+        }
       }
-      valorDividaTotal = soma;
-    } catch (_) {}
-    setState(() => loading = false);
+
+      double somaDividasAtivas = 0.0;
+      final Set<String> cpfsComDividaAtiva = {};
+      
+      for (var divida in dividas) {
+        final debtsId = divida['id'] as int?;
+        final cpf = divida['cpf'] as String?;
+        final value = divida['value'];
+        final num? valorDivida = value is num ? value : num.tryParse('$value');
+        
+        if (debtsId == null || cpf == null || valorDivida == null || valorDivida <= 0) {
+          continue;
+        }
+        
+        final totalPago = pagamentosPorDivida[debtsId] ?? 0;
+        final saldoDevedor = valorDivida;
+        
+        if (saldoDevedor > 0) {
+          cpfsComDividaAtiva.add(cpf);
+          somaDividasAtivas += saldoDevedor;
+        }
+      }
+
+      valorDividaTotal = somaDividasAtivas;
+      clientesEndividados = cpfsComDividaAtiva.length;
+      clientesQuitados = totalClientes - clientesEndividados;
+
+    } catch (e) {
+      debugPrint('Erro ao carregar dados: $e');
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erro: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
+
+    if (mounted) {
+      setState(() => loading = false);
+    }
   }
 
-  // Função para atualizar rapidamente
-  Future<void> atualizarDadosRapido() async {
-    setState(() => loading = true);
+  Widget _buildTextoCentro() {
+    String valor;
+    String titulo;
+    Color cor;
     
-    // Feedback visual com snackbar
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Atualizando dados...'),
-        duration: Duration(seconds: 1),
-      ),
-    );
+    if (_touchedIndex == null) {
+      valor = totalClientes.toString();
+      titulo = 'Total';
+      cor = Colors.blue;
+    } else if (_touchedIndex == 0) {
+      valor = clientesQuitados.toString();
+      titulo = 'Quitados';
+      cor = const Color(0xFF4CAF50);
+    } else {
+      valor = clientesEndividados.toString();
+      titulo = 'Endividados';
+      cor = const Color(0xFFF44336);
+    }
     
-    await carregarDados();
-    
-    setState(() => loading = false);
-    
-    // Feedback de sucesso
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Dados atualizados!'),
-        backgroundColor: Colors.green,
-        duration: const Duration(seconds: 2),
-      ),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          valor,
+          style: TextStyle(
+            fontSize: 28,
+            fontWeight: FontWeight.bold,
+            color: cor,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          titulo,
+          style: TextStyle(
+            fontSize: 14,
+            color: Colors.grey[600],
+          ),
+        ),
+      ],
     );
   }
 
-  // Widget para criar os containers como na imagem
-  Widget _buildStatsContainer() {
+  Widget _buildGraficoClientes() {
+    if (totalClientes == 0) {
+      return Container(
+        padding: const EdgeInsets.all(40),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 15,
+              offset: const Offset(0, 5),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            Icon(
+              Icons.pie_chart,
+              size: 80,
+              color: Colors.grey[400],
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'Nenhum cliente cadastrado',
+              style: TextStyle(
+                fontSize: 18,
+                color: Colors.grey,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    List<PieChartSectionData> sections = [
+      PieChartSectionData(
+        value: clientesQuitados.toDouble(),
+        color: const Color(0xFF4CAF50),
+        radius: _touchedIndex == 0 ? 40 : 35,
+        title: clientesQuitados > 0 
+            ? '${((clientesQuitados / totalClientes) * 100).toStringAsFixed(0)}%'
+            : '',
+        titleStyle: const TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
+        ),
+        showTitle: clientesQuitados > 0,
+      ),
+      PieChartSectionData(
+        value: clientesEndividados.toDouble(),
+        color: const Color(0xFFF44336),
+        radius: _touchedIndex == 1 ? 40 : 35,
+        title: clientesEndividados > 0
+            ? '${((clientesEndividados / totalClientes) * 100).toStringAsFixed(0)}%'
+            : '',
+        titleStyle: const TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
+        ),
+        showTitle: clientesEndividados > 0,
+      ),
+    ];
+
     return Container(
-      margin: const EdgeInsets.only(bottom: 20),
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 15),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(15),
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.2),
-            blurRadius: 10,
-            spreadRadius: 2,
-            offset: const Offset(0, 4),
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
           ),
         ],
-        border: Border.all(
-          color: Colors.grey.shade300,
-          width: 1,
-        ),
       ),
       child: Column(
         children: [
-          // Primeira linha: Clientes e Dívidas
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          Column(
             children: [
-              _buildStatItem(
-                title: 'Clientes',
-                value: totalClientes.toString().padLeft(3, '0'),
-                icon: Icons.people,
-                color: Colors.blue,
+              Text(
+                'Clientes',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey[800],
+                ),
               ),
-              _buildStatItem(
-                title: 'Dívidas',
-                value: totalDividas.toString().padLeft(3, '0'),
-                icon: Icons.money_off,
-                color: Colors.orange,
+              const SizedBox(height: 6),
+              Text(
+                'Total: $totalClientes cliente${totalClientes != 1 ? 's' : ''}',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey[600],
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ],
           ),
-          
           const SizedBox(height: 20),
-          
-          // Segunda linha: Símbolo $ e Dívida Total
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.green.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: Colors.green,
-                    width: 2,
+          SizedBox(
+            height: 220,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                GestureDetector(
+                  onTapDown: (details) {
+                    setState(() {
+                      if (_touchedIndex == null) {
+                        _touchedIndex = 0;
+                      } else if (_touchedIndex == 0) {
+                        _touchedIndex = 1;
+                      } else {
+                        _touchedIndex = null;
+                      }
+                    });
+                  },
+                  child: PieChart(
+                    PieChartData(
+                      startDegreeOffset: -90,
+                      centerSpaceRadius: 60,
+                      sectionsSpace: 3,
+                      sections: sections,
+                      pieTouchData: PieTouchData(
+                        touchCallback: (FlTouchEvent event, pieTouchResponse) {
+                          if (!event.isInterestedForInteractions ||
+                              pieTouchResponse == null ||
+                              pieTouchResponse.touchedSection == null) {
+                            setState(() {
+                              _touchedIndex = null;
+                            });
+                            return;
+                          }
+                          
+                          setState(() {
+                            _touchedIndex = pieTouchResponse
+                                .touchedSection!.touchedSectionIndex;
+                          });
+                        },
+                      ),
+                    ),
                   ),
                 ),
-                child: const Text(
-                  '\$',
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.green,
-                  ),
+                _buildTextoCentro(),
+              ],
+            ),
+          ),
+          const SizedBox(height: 15),
+          Column(
+            children: [
+              Text(
+                'Toque em uma fatia para ver detalhes',
+                style: TextStyle(
+                  fontSize: 10,
+                  color: Colors.grey[500],
+                  fontStyle: FontStyle.italic,
                 ),
               ),
-              const SizedBox(width: 15),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              const SizedBox(height: 10),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Text(
-                    'Dívida Total:',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey,
-                    ),
+                  Row(
+                    children: [
+                      Container(
+                        width: 10,
+                        height: 10,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF4CAF50),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Quitados: $clientesQuitados',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'R\$${valorDividaTotal.toStringAsFixed(2)}',
-                    style: const TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black,
-                    ),
+                  const SizedBox(width: 15),
+                  Row(
+                    children: [
+                      Container(
+                        width: 10,
+                        height: 10,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF44336),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Endividados: $clientesEndividados',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -172,103 +373,199 @@ class _HomeCaixaState extends State<HomeCaixa> {
     );
   }
 
-  // Widget para cada item de estatística (Clientes e Dívidas)
-  Widget _buildStatItem({
-    required String title,
-    required String value,
-    required IconData icon,
-    required Color color,
-  }) {
-    return Container(
-      width: MediaQuery.of(context).size.width * 0.4,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: color.withOpacity(0.3),
-          width: 1,
-        ),
-      ),
-      child: Column(
-        children: [
-          Icon(
-            icon,
-            size: 32,
-            color: color,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 14,
-              color: color.withOpacity(0.8),
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Widget para cabeçalho com botão de refresh
   Widget _buildHeader() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Expanded(
-          child: Divider(
+          child: Container(
+            height: 2,
             color: Colors.red,
-            thickness: 2,
-            endIndent: 10, // Espaço à direita da linha
           ),
         ),
-        const Text(
-          '  CAIXA   ',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: Colors.red,
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16),
+          child: Text(
+            'CAIXA',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.red,
+            ),
           ),
         ),
         Expanded(
-          child: Divider(
+          child: Container(
+            height: 2,
             color: Colors.red,
-            thickness: 2,
-            indent: 10, // Espaço à esquerda da linha
           ),
         ),
       ],
     );
   }
 
+  // Função para mostrar popup de confirmação
+  Future<bool> _mostrarPopUpConfirmacao({
+    required String titulo,
+    required String mensagem,
+    required String textoConfirmar,
+    required String textoCancelar,
+    required Color corConfirmar,
+    required VoidCallback onConfirmar,
+  }) async {
+    return await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Container(
+            constraints: BoxConstraints(
+              maxWidth: MediaQuery.of(context).size.width * 0.85,
+            ),
+            padding: const EdgeInsets.all(25),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Ícone de alerta
+                Container(
+                  width: 70,
+                  height: 70,
+                  decoration: BoxDecoration(
+                    color: corConfirmar.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.warning_amber,
+                    size: 40,
+                    color: corConfirmar,
+                  ),
+                ),
+                
+                const SizedBox(height: 20),
+                
+                // Título
+                Text(
+                  titulo,
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                
+                const SizedBox(height: 15),
+                
+                // Mensagem
+                Text(
+                  mensagem,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    color: Colors.grey,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                
+                const SizedBox(height: 30),
+                
+                // Botões
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    // Botão Cancelar
+                    Expanded(
+                      child: SizedBox(
+                        height: 50,
+                        child: ElevatedButton(
+                          onPressed: () {
+                            Navigator.of(context).pop(false);
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.grey.shade200,
+                            foregroundColor: Colors.grey.shade800,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            elevation: 0,
+                          ),
+                          child: Text(
+                            textoCancelar,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    
+                    const SizedBox(width: 15),
+                    
+                    // Botão Confirmar
+                    Expanded(
+                      child: SizedBox(
+                        height: 50,
+                        child: ElevatedButton(
+                          onPressed: () {
+                            Navigator.of(context).pop(true);
+                            onConfirmar();
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: corConfirmar,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            elevation: 2,
+                          ),
+                          child: Text(
+                            textoConfirmar,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    ) ?? false;
+  }
 
   Widget _buildSairButton() {
     return Column(
-      mainAxisSize: MainAxisSize.min,
       children: [
         Container(
           margin: const EdgeInsets.all(16),
           child: ElevatedButton(
             onPressed: () async {
-              final prefs = await SharedPreferences.getInstance();
-              await prefs.remove('username');
-              await prefs.remove('password');
-
-              await supabase.auth.signOut();
-
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => const Login()),
+              final confirmar = await _mostrarPopUpConfirmacao(
+                titulo: 'Sair do Sistema',
+                mensagem: 'Tem certeza que deseja sair da sua conta?',
+                textoConfirmar: 'Sair',
+                textoCancelar: 'Cancelar',
+                corConfirmar: Colors.red,
+                onConfirmar: () async {
+                  final prefs = await SharedPreferences.getInstance();
+                  await prefs.remove('username');
+                  await prefs.remove('password');
+                  await supabase.auth.signOut();
+                  if (mounted) {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(builder: (context) => const Login()),
+                    );
+                  }
+                },
               );
             },
             style: ElevatedButton.styleFrom(
@@ -297,43 +594,34 @@ class _HomeCaixaState extends State<HomeCaixa> {
     );
   }
 
-
-  int _navIndex = 1;
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
-
       body: loading
-          ? const Center(child: CircularProgressIndicator())
-          : RefreshIndicator(
-              onRefresh: carregarDados,
-              child: Column(
-                children: [
-                  Expanded(
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        children: [
-                          _buildHeader(),
-                          
-                          const SizedBox(height: 20),
-                          
-                          _buildStatsContainer(),
-                        ],
-                      ),
+          ? const Center(child: CircularProgressIndicator(color: Colors.red))
+          : Column(
+              children: [
+                const SizedBox(height: 46),
+                _buildHeader(),
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      children: [
+                        const SizedBox(height: 30),
+                        _buildGraficoClientes(),
+                      ],
                     ),
                   ),
-                  
-                  // Botão SAIR fixo na parte inferior
-                  _buildSairButton(),
-                ],
-              ),
+                ),
+                const SizedBox(height: 25),
+                _buildSairButton(),
+              ],
             ),
-
       bottomNavigationBar: ConvexAppBar(
-        backgroundColor: Colors.red, 
+        backgroundColor: Colors.red,
+        activeColor: Colors.white,
         items: const [
           TabItem(icon: Icons.people, title: 'Clientes'),
           TabItem(icon: Icons.home, title: 'Home'),
@@ -342,21 +630,27 @@ class _HomeCaixaState extends State<HomeCaixa> {
         initialActiveIndex: _navIndex,
         onTap: (i) {
           setState(() => _navIndex = i);
-          
           if (i == 0) {
-            // Navegar para Clientes usando a função redirect
-            redirect(
+            Navigator.push(
               context,
-              TelaClientesCaixa(users: widget.users),
-            );
+              MaterialPageRoute(
+                builder: (context) => TelaClientesCaixa(users: widget.users),
+              ),
+            ).then((_) {
+              carregarDados();
+              setState(() => _navIndex = 1);
+            });
           } else if (i == 2) {
-            // Navegar para Dívidas usando a função redirect
-            redirect(
+            Navigator.push(
               context,
-              TelaDividasCaixa(users: widget.users),
-            );
+              MaterialPageRoute(
+                builder: (context) => TelaDividasCaixa(users: widget.users),
+              ),
+            ).then((_) {
+              carregarDados();
+              setState(() => _navIndex = 1);
+            });
           }
-          // i == 1 (Home) não precisa navegar
         },
       ),
     );

@@ -11,6 +11,11 @@ dependencies:
   flutter:
     sdk: flutter
   
+  # ADICIONE ESTAS DUAS LINHAS ↓
+  flutter_localizations:
+    sdk: flutter
+  intl: ^0.20.2
+  
   flutter_dotenv: ^5.1.0
   convex_bottom_bar: ^3.2.0
   supabase_flutter: ^2.10.3
@@ -18,7 +23,7 @@ dependencies:
   url_launcher: ^6.1.10
   font_awesome_flutter: ^10.4.0
   shared_preferences: ^2.2.2
-
+  fl_chart: ^0.66.2
 
 dev_dependencies:
   flutter_test:

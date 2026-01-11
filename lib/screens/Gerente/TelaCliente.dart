@@ -32,6 +32,384 @@ class _TelaClientesState extends State<TelaClientes> {
   final TextEditingController enderecoController = TextEditingController();
 
   Map<String, dynamic>? clienteParaEditar;
+  
+  static const List<String> dddsValidos = [
+    '11','12','13','14','15','16','17','18','19',
+    '21','22','24',
+    '27','28',
+    '31','32','33','34','35','37','38',
+    '41','42','43','44','45','46',
+    '47','48','49',
+    '51','53','54','55',
+    '61',
+    '62','64',
+    '63',
+    '65','66',
+    '67',
+    '68',
+    '69',
+    '71','73','74','75','77',
+    '79',
+    '81','87',
+    '82',
+    '83',
+    '84',
+    '85','88',
+    '86','89',
+    '91','93','94',
+    '92','97',
+    '95',
+    '96',
+    '98','99',
+  ];
+
+  // ==================== MÉTODOS DE POP-UP ====================
+
+  Future<void> _mostrarPopUpSucesso({
+    required String titulo,
+    required String mensagem,
+    IconData? icone,
+    Color corIcone = Colors.green,
+  }) async {
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Container(
+          padding: const EdgeInsets.all(25),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 70,
+                height: 70,
+                decoration: BoxDecoration(
+                  color: corIcone.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  icone ?? Icons.check_circle,
+                  size: 40,
+                  color: corIcone,
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                titulo,
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 10),
+              Text(
+                mensagem,
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.grey[700],
+                  height: 1.4,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 25),
+              SizedBox(
+                width: 150,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 2,
+                  ),
+                  child: const Text(
+                    'OK',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _mostrarPopUpErro({
+    required String titulo,
+    required String mensagem,
+    String? detalhes,
+  }) async {
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Container(
+          padding: const EdgeInsets.all(25),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 70,
+                height: 70,
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.error_outline,
+                  size: 40,
+                  color: Colors.red,
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                titulo,
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 10),
+              Text(
+                mensagem,
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.grey[700],
+                  height: 1.4,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              if (detalhes != null && detalhes.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[100],
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.grey[300]!),
+                  ),
+                  child: Text(
+                    detalhes,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey,
+                      fontFamily: 'monospace',
+                    ),
+                  ),
+                ),
+              ],
+              const SizedBox(height: 25),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        side: const BorderSide(color: Colors.grey),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text(
+                        'Fechar',
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        carregarClientes(); // Tentar novamente
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text('Tentar Novamente'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _mostrarPopUpConfirmacao({
+    required String titulo,
+    required String mensagem,
+    required VoidCallback onConfirmar,
+    String textoConfirmar = 'Confirmar',
+    String textoCancelar = 'Cancelar',
+    Color corConfirmar = Colors.red,
+  }) async {
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Container(
+          padding: const EdgeInsets.all(25),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 70,
+                height: 70,
+                decoration: BoxDecoration(
+                  color: Colors.orange.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.warning_amber_rounded,
+                  size: 40,
+                  color: Colors.orange,
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                titulo,
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 15),
+              Text(
+                mensagem,
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.grey[700],
+                  height: 1.4,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 30),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        side: const BorderSide(color: Colors.grey),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: Text(
+                        textoCancelar,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 15),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        onConfirmar();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: corConfirmar,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 2,
+                      ),
+                      child: Text(
+                        textoConfirmar,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _mostrarPopUpLoading({
+    required String mensagem,
+    bool podeFechar = false,
+  }) async {
+    return showDialog(
+      context: context,
+      barrierDismissible: podeFechar,
+      builder: (_) => Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Container(
+          padding: const EdgeInsets.all(30),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const CircularProgressIndicator(
+                color: Colors.red,
+                strokeWidth: 3,
+              ),
+              const SizedBox(height: 20),
+              Text(
+                mensagem,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.black87,
+                ),
+              ),
+              if (podeFechar) ...[
+                const SizedBox(height: 20),
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cancelar'),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
   @override
   void initState() {
@@ -87,6 +465,12 @@ class _TelaClientesState extends State<TelaClientes> {
       print('Erro ao carregar clientes: $e');
       clientes = [];
       filtrados = [];
+      if (!mounted) return;
+      await _mostrarPopUpErro(
+        titulo: 'Erro ao Carregar',
+        mensagem: 'Não foi possível carregar a lista de clientes.',
+        detalhes: e.toString(),
+      );
     }
     setState(() => loading = false);
   }
@@ -94,24 +478,40 @@ class _TelaClientesState extends State<TelaClientes> {
   Future<void> atualizarClientesRapido() async {
     setState(() => refreshingClientes = true);
     
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Atualizando lista de clientes...'),
-        duration: Duration(seconds: 1),
+    // Mostrar loading
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Container(
+          padding: const EdgeInsets.all(30),
+          child: const Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(
+                color: Colors.red,
+                strokeWidth: 3,
+              ),
+              SizedBox(height: 20),
+
+            ],
+          ),
+        ),
       ),
     );
     
     await carregarClientes();
     
+    // Fechar loading
+    if (mounted && Navigator.canPop(context)) {
+      Navigator.pop(context);
+    }
+    
     setState(() => refreshingClientes = false);
     
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Lista atualizada! ${clientes.length} cliente(s)'),
-        backgroundColor: Colors.green,
-        duration: const Duration(seconds: 2),
-      ),
-    );
   }
 
   void filtrarClientes() {
@@ -130,18 +530,13 @@ class _TelaClientesState extends State<TelaClientes> {
     });
   }
 
-  // Função para validar CPF
   bool _validarCPF(String cpf) {
-    // Remove caracteres não numéricos
     cpf = cpf.replaceAll(RegExp(r'[^\d]'), '');
     
-    // Verifica se tem 11 dígitos
     if (cpf.length != 11) return false;
     
-    // Verifica se todos os dígitos são iguais
     if (RegExp(r'^(\d)\1*$').hasMatch(cpf)) return false;
     
-    // Algoritmo de validação do CPF
     int soma = 0;
     for (int i = 0; i < 9; i++) {
       soma += int.parse(cpf[i]) * (10 - i);
@@ -161,16 +556,33 @@ class _TelaClientesState extends State<TelaClientes> {
     return segundoDigito == int.parse(cpf[10]);
   }
 
-  // Função para validar telefone
   bool _validarTelefone(String telefone) {
-    // Remove caracteres não numéricos
     telefone = telefone.replaceAll(RegExp(r'[^\d]'), '');
-    
-    // Verifica se tem entre 10 e 11 dígitos (com DDD)
-    return telefone.length >= 10 && telefone.length <= 11;
+
+    if (telefone.length != 10 && telefone.length != 11) return false;
+
+    final String ddd = telefone.substring(0, 2);
+
+    if (ddd == '00' || ddd == '01') return false;
+
+    if (!dddsValidos.contains(ddd)) return false;
+
+    if (RegExp(r'^(\d)\1+$').hasMatch(telefone)) return false;
+
+    if (RegExp(r'0123456789|1234567890').hasMatch(telefone)) return false;
+
+    if (RegExp(r'(.)\1{3,}').hasMatch(telefone.substring(2))) return false;
+
+    if (telefone.length == 11 && telefone[2] != '9') return false;
+
+    if (telefone.length == 10) {
+      final String primeiroNumero = telefone[2];
+      if (primeiroNumero == '0' || primeiroNumero == '1') return false;
+    }
+
+    return true;
   }
 
-  // Máscara para CPF
   String _aplicarMascaraCPF(String cpf) {
     cpf = cpf.replaceAll(RegExp(r'[^\d]'), '');
     
@@ -185,7 +597,6 @@ class _TelaClientesState extends State<TelaClientes> {
     }
   }
 
-  // Máscara para telefone
   String _aplicarMascaraTelefone(String telefone) {
     telefone = telefone.replaceAll(RegExp(r'[^\d]'), '');
     
@@ -205,50 +616,57 @@ class _TelaClientesState extends State<TelaClientes> {
     final endereco = enderecoController.text.trim();
 
     // Validações
-    if (nome.isEmpty || cpf.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Nome e CPF são obrigatórios!'),
-          backgroundColor: Colors.orange,
-        ),
+    if (nome.isEmpty || cpf.isEmpty || telefone.isEmpty) {
+      if (!mounted) return;
+
+      await _mostrarPopUpErro(
+        titulo: 'Campos Obrigatórios',
+        mensagem: 'Nome, CPF e Telefone são obrigatórios!',
       );
       return;
     }
 
-    // Remove máscara do CPF para validação
     cpf = cpf.replaceAll(RegExp(r'[^\d]'), '');
     
     if (!_validarCPF(cpf)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('CPF inválido!'),
-          backgroundColor: Colors.red,
-        ),
+      if (!mounted) return;
+
+      await _mostrarPopUpErro(
+        titulo: 'CPF Inválido',
+        mensagem: 'Por favor, informe um CPF válido.',
       );
       return;
     }
 
-    // Valida telefone se preenchido
-    if (telefone.isNotEmpty) {
-      telefone = telefone.replaceAll(RegExp(r'[^\d]'), '');
-      if (!_validarTelefone(telefone)) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Telefone inválido! Use o formato: (XX) XXXXX-XXXX'),
-            backgroundColor: Colors.red,
-          ),
-        );
-        return;
-      }
+    if (telefone.isEmpty) {
+      if (!mounted) return;
+
+      await _mostrarPopUpErro(
+        titulo: 'Telefone Obrigatório',
+        mensagem: 'O telefone é obrigatório para cadastro.',
+      );
+      return;
+    }
+
+    telefone = telefone.replaceAll(RegExp(r'[^\d]'), '');
+    if (!_validarTelefone(telefone)) {
+      if (!mounted) return;
+
+      await _mostrarPopUpErro(
+        titulo: 'Telefone Inválido',
+        mensagem: 'Informe um telefone válido no formato: (XX) XXXXX-XXXX',
+      );
+      return;
     }
 
     try {
       final data = {
         'name': nome,
         'cpf': cpf,
-        'phone': telefone.isNotEmpty ? telefone : null,
+        'phone': telefone,
         'endereco': endereco.isNotEmpty ? endereco : null,
       };
+
 
       if (clienteParaEditar == null) {
         // Verificar se CPF já existe
@@ -259,21 +677,26 @@ class _TelaClientesState extends State<TelaClientes> {
             .maybeSingle();
             
         if (clienteExistente != null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('CPF já cadastrado!'),
-              backgroundColor: Colors.red,
-            ),
+          // Fechar loading
+          if (!mounted) return;
+
+          await _mostrarPopUpErro(
+            titulo: 'CPF Já Cadastrado',
+            mensagem: 'Este CPF já está cadastrado no sistema.',
           );
           return;
         }
 
         await supabase.from('clients').insert(data);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Cliente "$nome" cadastrado!'),
-            backgroundColor: Colors.green,
-          ),
+        
+        // Fechar loading
+        if (!mounted) return;
+
+        await _mostrarPopUpSucesso(
+          titulo: 'Cliente Cadastrado!',
+          mensagem: 'Cliente "$nome" cadastrado com sucesso.',
+          icone: Icons.person_add,
+          corIcone: Colors.green,
         );
       } else {
         await supabase
@@ -281,11 +704,14 @@ class _TelaClientesState extends State<TelaClientes> {
             .update(data)
             .eq('cpf', clienteParaEditar!['cpf']);
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Cliente atualizado!'),
-            backgroundColor: Colors.green,
-          ),
+        // Fechar loading
+        if (!mounted) return;
+
+        await _mostrarPopUpSucesso(
+          titulo: 'Cliente Atualizado!',
+          mensagem: 'As informações foram atualizadas com sucesso.',
+          icone: Icons.edit,
+          corIcone: Colors.blue,
         );
         clienteParaEditar = null;
       }
@@ -293,11 +719,13 @@ class _TelaClientesState extends State<TelaClientes> {
       limparCamposCliente();
       await atualizarClientesRapido();
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Erro ao salvar: $e'),
-          backgroundColor: Colors.red,
-        ),
+      // Fechar loading se estiver aberto
+      if (!mounted) return;
+
+      await _mostrarPopUpErro(
+        titulo: 'Erro ao Salvar',
+        mensagem: 'Não foi possível salvar as informações do cliente.',
+        detalhes: e.toString(),
       );
     }
   }
@@ -311,93 +739,43 @@ class _TelaClientesState extends State<TelaClientes> {
   }
 
   Future<void> deletarCliente(String cpf, String nome) async {
-    final confirmar = await showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text(
-          "Excluir Cliente",
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: Colors.red,
-          ),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Deseja excluir o cliente:', style: TextStyle(color: Colors.grey)),
-            const SizedBox(height: 8),
-            Text(
-              '"$nome"',
-              style: const TextStyle(
-                fontWeight: FontWeight.w600,
-                fontSize: 18,
-                color: Colors.black87,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'CPF: ${_aplicarMascaraCPF(cpf)}',
-              style: const TextStyle(color: Colors.grey),
-            ),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.orange.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.orange.withOpacity(0.3)),
-              ),
-              child: const Text(
-                'Atenção: Todas as dívidas associadas também serão excluídas.',
-                style: TextStyle(fontSize: 12, color: Colors.orange),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text("Cancelar", style: TextStyle(color: Colors.black)),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
-            ),
-            child: const Text("Excluir"),
-          ),
-        ],
-      ),
-    );
+    await _mostrarPopUpConfirmacao(
+      titulo: 'Excluir Cliente',
+      mensagem: 'Tem certeza que deseja excluir permanentemente o cliente "$nome"?\n\nEsta ação excluirá TODAS as dívidas e pagamentos associados.',
+      textoConfirmar: 'Excluir',
+      textoCancelar: 'Cancelar',
+      corConfirmar: Colors.red,
+      onConfirmar: () async {
+        
+        
+        try {
+          await supabase.from('payments').delete().eq('cpf', cpf);
+          await supabase.from('debts').delete().eq('cpf', cpf);
+          await supabase.from('clients').delete().eq('cpf', cpf);
+          
+          // Fechar loading
+          if (!mounted) return;
 
-    if (confirmar == true) {
-      try {
-        // Primeiro excluir pagamentos relacionados
-        await supabase.from('payments').delete().eq('cpf', cpf);
-        // Depois excluir dívidas
-        await supabase.from('debts').delete().eq('cpf', cpf);
-        // Finalmente excluir o cliente
-        await supabase.from('clients').delete().eq('cpf', cpf);
-        
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Cliente "$nome" excluído com sucesso!'),
-            backgroundColor: Colors.green,
-          ),
-        );
-        
-        await atualizarClientesRapido();
-      } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erro ao excluir: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
+          await _mostrarPopUpSucesso(
+            titulo: 'Cliente Excluído!',
+            mensagem: 'Cliente "$nome" removido do sistema com sucesso.',
+            icone: Icons.delete_forever,
+            corIcone: Colors.orange,
+          );
+          
+          await atualizarClientesRapido();
+        } catch (e) {
+          // Fechar loading se estiver aberto
+          if (!mounted) return;
+
+          await _mostrarPopUpErro(
+            titulo: 'Erro ao Excluir',
+            mensagem: 'Não foi possível excluir o cliente.',
+            detalhes: e.toString(),
+          );
+        }
+      },
+    );
   }
 
   void abrirDialogCadastroCliente({Map<String, dynamic>? cliente}) {
@@ -426,12 +804,30 @@ class _TelaClientesState extends State<TelaClientes> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  cliente == null ? 'Novo Cliente' : 'Editar Cliente',
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black,
+                Center(
+                  child: Container(
+                    width: 60,
+                    height: 60,
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      cliente == null ? Icons.person_add : Icons.edit,
+                      size: 30,
+                      color: Colors.black,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 15),
+                Center(
+                  child: Text(
+                    cliente == null ? 'Novo Cliente' : 'Editar Cliente',
+                    style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -467,7 +863,7 @@ class _TelaClientesState extends State<TelaClientes> {
                 const SizedBox(height: 15),
                 _buildTextFieldDialog(
                   controller: telefoneController,
-                  label: 'Telefone (opcional)',
+                  label: 'Telefone*',
                   icon: Icons.phone,
                   keyboardType: TextInputType.phone,
                   inputFormatters: [
@@ -496,26 +892,58 @@ class _TelaClientesState extends State<TelaClientes> {
                 ),
                 const SizedBox(height: 25),
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('Cancelar'),
-                    ),
-                    const SizedBox(width: 10),
-                    ElevatedButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        salvarCliente();
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.black,
-                        foregroundColor: Colors.white,
+                    SizedBox(
+                      width: 120,
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          side: const BorderSide(color: Colors.grey),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text(
+                          'Cancelar',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.grey,
+                          ),
+                        ),
                       ),
-                      child: const Text('Salvar'),
+                    ),
+                    const SizedBox(width: 15),
+                    SizedBox(
+                      width: 120,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          salvarCliente();
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.black,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 2,
+                        ),
+                        child: const Text(
+                          'Salvar',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
                     ),
                   ],
                 ),
+                const SizedBox(height: 10),
               ],
             ),
           ),
@@ -550,6 +978,7 @@ class _TelaClientesState extends State<TelaClientes> {
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: Colors.black, width: 2),
         ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       ),
     );
   }
@@ -572,7 +1001,24 @@ class _TelaClientesState extends State<TelaClientes> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Título com nome do cliente
+                  Center(
+                    child: Container(
+                      width: 70,
+                      height: 70,
+                      decoration: BoxDecoration(
+                        color: temDivida ? Colors.red.withOpacity(0.1) : Colors.green.withOpacity(0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        temDivida ? Icons.warning_amber : Icons.check_circle,
+                        size: 40,
+                        color: temDivida ? Colors.red : Colors.green,
+                      ),
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 15),
+                  
                   Center(
                     child: Text(
                       cliente['name'],
@@ -587,7 +1033,6 @@ class _TelaClientesState extends State<TelaClientes> {
                   
                   const SizedBox(height: 15),
                   
-                  // Informações básicas
                   _buildInfoItem('CPF', _aplicarMascaraCPF(cliente['cpf']), Icons.badge),
                   const SizedBox(height: 10),
                   
@@ -607,7 +1052,6 @@ class _TelaClientesState extends State<TelaClientes> {
                       ],
                     ),
                   
-                  // Status da dívida
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
@@ -639,7 +1083,6 @@ class _TelaClientesState extends State<TelaClientes> {
                   
                   const SizedBox(height: 15),
                   
-                  // Total da dívida
                   Center(
                     child: Text(
                       'Dívida Total: R\$${(cliente['total_divida'] ?? 0.0).toStringAsFixed(2)}',
@@ -653,7 +1096,6 @@ class _TelaClientesState extends State<TelaClientes> {
                   
                   const SizedBox(height: 20),
                   
-                  // Lista de dívidas detalhadas
                   if (dividas.isNotEmpty)
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -715,44 +1157,51 @@ class _TelaClientesState extends State<TelaClientes> {
                   
                   const SizedBox(height: 25),
                   
-                  // Botões de ação
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
-                      ElevatedButton.icon(
-                        onPressed: () {
-                          Navigator.pop(context); // Fecha o diálogo de detalhes
-                          abrirDialogCadastroCliente(cliente: cliente);
-                        },
-                        icon: const Icon(Icons.edit, size: 20),
-                        label: const Text("Editar"),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.black,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                      SizedBox(
+                        width: 120,
+                        child: ElevatedButton.icon(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            abrirDialogCadastroCliente(cliente: cliente);
+                          },
+                          icon: const Icon(Icons.edit, size: 20),
+                          label: const Text("Editar"),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.black,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
                           ),
                         ),
                       ),
-                      ElevatedButton.icon(
-                        onPressed: () {
-                          Navigator.pop(context); // Fecha o diálogo de detalhes
-                          deletarCliente(cliente['cpf'], cliente['name']);
-                        },
-                        icon: const Icon(Icons.delete, size: 20),
-                        label: const Text("Excluir"),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                      SizedBox(
+                        width: 120,
+                        child: ElevatedButton.icon(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            deletarCliente(cliente['cpf'], cliente['name']);
+                          },
+                          icon: const Icon(Icons.delete, size: 20),
+                          label: const Text("Excluir"),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.red,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
                           ),
                         ),
                       ),
                     ],
                   ),
                   
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 10),
                 ],
               ),
             ),
@@ -815,12 +1264,10 @@ class _TelaClientesState extends State<TelaClientes> {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Informações do cliente (esquerda)
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Nome
                   Text(
                     cliente['name'],
                     style: const TextStyle(
@@ -834,7 +1281,6 @@ class _TelaClientesState extends State<TelaClientes> {
                   
                   const SizedBox(height: 8),
                   
-                  // Status/Valor embaixo do nome
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
@@ -859,11 +1305,9 @@ class _TelaClientesState extends State<TelaClientes> {
             
             const SizedBox(width: 16),
             
-            // CPF e botões (direita)
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                // CPF em cima dos botões
                 Text(
                   cpfFormatado,
                   style: const TextStyle(
@@ -874,7 +1318,6 @@ class _TelaClientesState extends State<TelaClientes> {
                 
                 const SizedBox(height: 8),
                 
-                // Botões de ação
                 Row(
                   children: [
                     Container(
@@ -924,13 +1367,14 @@ class _TelaClientesState extends State<TelaClientes> {
     
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
-
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: Colors.black,
-        child: const Icon(Icons.add, color: Colors.white),
-        onPressed: () => abrirDialogCadastroCliente(),
+      floatingActionButton: Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        child: FloatingActionButton(
+          backgroundColor: Colors.black,
+          child: const Icon(Icons.add, color: Colors.white),
+          onPressed: () => abrirDialogCadastroCliente(),
+        ),
       ),
-
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -957,7 +1401,7 @@ class _TelaClientesState extends State<TelaClientes> {
                     ),
                   ),
 
-                  const SizedBox(width: 5), // pequena separação visual
+                  const SizedBox(width: 5),
 
                   IconButton(
                     onPressed: refreshingClientes ? null : atualizarClientesRapido,
@@ -975,10 +1419,8 @@ class _TelaClientesState extends State<TelaClientes> {
                 ],
               ),
 
-
               const SizedBox(height: 25),
               
-              // Linha com título e botão de refresh
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -1069,6 +1511,7 @@ class _TelaClientesState extends State<TelaClientes> {
                                 ),
                               ),
               ),
+              const SizedBox(height: 35),
             ],
           ),
         ),
@@ -1081,22 +1524,19 @@ class _TelaClientesState extends State<TelaClientes> {
           TabItem(icon: Icons.home, title: 'Home'),
           TabItem(icon: Icons.attach_money, title: 'Dívidas'),
         ],
-        initialActiveIndex: 0, // Clientes ativo
+        initialActiveIndex: 0,
         onTap: (i) {
           if (i == 1) {
-            // Navegar para Home
             redirect(
               context,
               HomeGerente(users: widget.users),
             );
           } else if (i == 2) {
-            // Navegar para Dívidas
             redirect(
               context,
               TelaDividas(users: widget.users),
             );
           }
-          // i == 0 (Clientes) já estamos aqui, não precisa navegar
         },
       ),
     );

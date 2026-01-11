@@ -44,17 +44,319 @@ class _TelaDividasCaixaState extends State<TelaDividasCaixa> {
   final TextEditingController pagamentoDataController = TextEditingController();
   String? formaPagamentoSelecionada;
   List<String> formasPagamento = [
-    'Dinheiro',
-    'Cartão de Crédito',
-    'Cartão de Débito',
-    'PIX',
-    'Transferência Bancária',
-    'Cheque'
+      'PIX',
+      'Espécie',
+      'Cartão',
+      'Outros'
   ];
   Map<String, dynamic>? dividaSelecionadaParaPagamento;
 
   String ordenarPor = 'vencimento'; // 'preco', 'vencimento', 'data_inicio'
   bool ordenarAscendente = false;
+// ==================== MÉTODOS DE POP-UP ====================
+
+  Future<void> _mostrarPopUpSucesso({
+    required String titulo,
+    required String mensagem,
+    IconData? icone,
+    Color corIcone = Colors.green,
+  }) async {
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Container(
+          padding: const EdgeInsets.all(25),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 70,
+                height: 70,
+                decoration: BoxDecoration(
+                  color: corIcone.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  icone ?? Icons.check_circle,
+                  size: 40,
+                  color: corIcone,
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                titulo,
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 10),
+              Text(
+                mensagem,
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.grey[700],
+                  height: 1.4,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 25),
+              SizedBox(
+                width: 150,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 2,
+                  ),
+                  child: const Text(
+                    'OK',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _mostrarPopUpErro({
+    required String titulo,
+    required String mensagem,
+    String? detalhes,
+  }) async {
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Container(
+          padding: const EdgeInsets.all(25),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 70,
+                height: 70,
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.error_outline,
+                  size: 40,
+                  color: Colors.red,
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                titulo,
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 10),
+              Text(
+                mensagem,
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.grey[700],
+                  height: 1.4,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              if (detalhes != null && detalhes.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[100],
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.grey[300]!),
+                  ),
+                  child: Text(
+                    detalhes,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey,
+                      fontFamily: 'monospace',
+                    ),
+                  ),
+                ),
+              ],
+              const SizedBox(height: 25),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        side: const BorderSide(color: Colors.grey),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text(
+                        'Fechar',
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        carregarDividas(); // Tentar novamente
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text('Tentar Novamente'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _mostrarPopUpConfirmacao({
+    required String titulo,
+    required String mensagem,
+    required VoidCallback onConfirmar,
+    String textoConfirmar = 'Confirmar',
+    String textoCancelar = 'Cancelar',
+    Color corConfirmar = Colors.red,
+  }) async {
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Container(
+          padding: const EdgeInsets.all(25),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 70,
+                height: 70,
+                decoration: BoxDecoration(
+                  color: Colors.orange.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.warning_amber_rounded,
+                  size: 40,
+                  color: Colors.orange,
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                titulo,
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 15),
+              Text(
+                mensagem,
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.grey[700],
+                  height: 1.4,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 30),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        side: const BorderSide(color: Colors.grey),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: Text(
+                        textoCancelar,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 15),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        onConfirmar();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: corConfirmar,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 2,
+                      ),
+                      child: Text(
+                        textoConfirmar,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
   @override
   void initState() {
@@ -125,6 +427,12 @@ class _TelaDividasCaixaState extends State<TelaDividasCaixa> {
       print('Erro ao carregar dívidas: $e');
       dividas = [];
       filtradas = [];
+
+      await _mostrarPopUpErro(
+        titulo: 'Erro ao Carregar',
+        mensagem: 'Não foi possível carregar a lista de dívidas.',
+        detalhes: e.toString(),
+      );
     }
     setState(() => loading = false);
   }
@@ -211,25 +519,13 @@ class _TelaDividasCaixaState extends State<TelaDividasCaixa> {
 
   Future<void> atualizarDividasRapido() async {
     setState(() => refreshingDividas = true);
-    
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Atualizando lista de dívidas...'),
-        duration: Duration(seconds: 1),
-      ),
-    );
+
     
     await carregarDividas();
     
     setState(() => refreshingDividas = false);
     
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Lista atualizada! ${dividas.length} dívida(s)'),
-        backgroundColor: Colors.green,
-        duration: const Duration(seconds: 2),
-      ),
-    );
+
   }
 
   void aplicarFiltroBusca() {
@@ -270,47 +566,32 @@ class _TelaDividasCaixaState extends State<TelaDividasCaixa> {
 
   Future<void> salvarDivida() async {
     final valorText = valorController.text.trim();
-    final valorInicialText = valorInicialController.text.trim();
     final dataInicioText = dataInicioController.text.trim();
     final dataVencimentoText = dataVencimentoController.text.trim();
 
-    if (valorText.isEmpty || valorInicialText.isEmpty || clienteSelecionadoId == null || dataInicioText.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Todos os campos são obrigatórios!'),
-          backgroundColor: Colors.orange,
-        ),
+    if (valorText.isEmpty  || clienteSelecionadoId == null || dataInicioText.isEmpty) {
+      if (!mounted) return;
+      await _mostrarPopUpErro(
+        titulo: 'Campos Obrigatórios',
+        mensagem: 'Todos os campos marcados com * são obrigatórios.',
       );
       return;
     }
 
     final valor = double.tryParse(valorText.replaceAll(',', '.'));
-    final valorInicial = double.tryParse(valorInicialText.replaceAll(',', '.'));
-    
     if (valor == null || valor <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Valor atual inválido!'),
-          backgroundColor: Colors.red,
-        ),
+      if (!mounted) return;
+      await _mostrarPopUpErro(
+        titulo: 'Valor Inválido',
+        mensagem: 'Informe um valor válido para a dívida.',
       );
       return;
     }
 
-    if (valorInicial == null || valorInicial <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Valor inicial inválido!'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
 
     try {
       final data = {
         'cpf': clienteSelecionadoId,
-        'init_value': valorInicial,
         'value': valor,
         'init_date': dataInicioText,
         'end_date': dataVencimentoText.isNotEmpty ? dataVencimentoText : null,
@@ -318,28 +599,28 @@ class _TelaDividasCaixaState extends State<TelaDividasCaixa> {
 
       await supabase.from('debts').insert(data);
       
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Dívida de R\$${valor.toStringAsFixed(2)} cadastrada!'),
-          backgroundColor: Colors.green,
-        ),
-      );
+        if (!mounted) return;
+        await _mostrarPopUpSucesso(
+          titulo: 'Dívida Cadastrada!',
+          mensagem: 'Dívida de R\$${valor.toStringAsFixed(2)} cadastrada com sucesso.',
+          icone: Icons.attach_money,
+          corIcone: Colors.green,
+        );
 
       limparCamposDivida();
       await atualizarDividasRapido();
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Erro ao salvar: $e'),
-          backgroundColor: Colors.red,
-        ),
+      if (!mounted) return;
+      await _mostrarPopUpErro(
+        titulo: 'Erro ao Salvar',
+        mensagem: 'Não foi possível salvar as informações da dívida.',
+        detalhes: e.toString(),
       );
     }
   }
 
   void limparCamposDivida() {
     valorController.clear();
-    valorInicialController.clear();
     dataInicioController.clear();
     dataVencimentoController.clear();
     dataInicio = null;
@@ -348,45 +629,73 @@ class _TelaDividasCaixaState extends State<TelaDividasCaixa> {
     clienteSelecionadoNome = null;
   }
 
-  Future<void> _selecionarData(BuildContext context, bool isInicio) async {
-    final DateTime? dataSelecionada = await showDatePicker(
-      context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
-    );
-
-    if (dataSelecionada != null) {
-      final String ano = dataSelecionada.year.toString();
-      final String mes = dataSelecionada.month.toString().padLeft(2, '0');
-      final String dia = dataSelecionada.day.toString().padLeft(2, '0');
-      final String formatada = '$ano-$mes-$dia';
-      
-      if (isInicio) {
-        dataInicio = dataSelecionada;
-        dataInicioController.text = formatada;
-      } else {
-        dataVencimento = dataSelecionada;
-        dataVencimentoController.text = formatada;
-      }
-    }
+Future<void> _selecionarData(BuildContext context, bool isInicio) async {
+  // Verifique se o contexto tem MaterialLocalizations
+  final localizations = MaterialLocalizations.of(context);
+  if (localizations == null) {
+    print('MaterialLocalizations não encontrado!');
+    return;
   }
 
-  Future<void> _selecionarDataPagamento(BuildContext context) async {
-    final DateTime? dataSelecionada = await showDatePicker(
-      context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
-    );
+  final DateTime? dataSelecionada = await showDatePicker(
+    context: context,
+    initialDate: DateTime.now(),
+    firstDate: DateTime(2000),
+    lastDate: DateTime(2100),
+    // Textos em português
+    cancelText: 'Cancelar',
+    confirmText: 'Confirmar',
+    helpText: 'Selecione uma data',
+    fieldHintText: 'DD/MM/AAAA',
+    fieldLabelText: 'Data',
+    // Builder para garantir o contexto correto
+    builder: (context, child) {
+      return Theme(
+        data: Theme.of(context),
+        child: child!,
+      );
+    },
+  );
 
-    if (dataSelecionada != null) {
-      final String ano = dataSelecionada.year.toString();
-      final String mes = dataSelecionada.month.toString().padLeft(2, '0');
-      final String dia = dataSelecionada.day.toString().padLeft(2, '0');
-      pagamentoDataController.text = '$ano-$mes-$dia';
+  if (dataSelecionada != null) {
+    final String ano = dataSelecionada.year.toString();
+    final String mes = dataSelecionada.month.toString().padLeft(2, '0');
+    final String dia = dataSelecionada.day.toString().padLeft(2, '0');
+    final String formatada = '$ano-$mes-$dia';
+    
+    if (isInicio) {
+      dataInicio = dataSelecionada;
+      dataInicioController.text = formatada;
+    } else {
+      dataVencimento = dataSelecionada;
+      dataVencimentoController.text = formatada;
     }
   }
+}
+Future<void> _selecionarDataPagamento(BuildContext context) async {
+  // Definir localização para português brasileiro
+  final locale = const Locale('pt', 'BR');
+  
+  final DateTime? dataSelecionada = await showDatePicker(
+    context: context,
+    initialDate: DateTime.now(),
+    firstDate: DateTime(2000),
+    lastDate: DateTime(2100),
+    locale: locale, // Adicione esta linha
+    cancelText: 'Cancelar',
+    confirmText: 'Confirmar',
+    helpText: 'Selecione a data do pagamento',
+    fieldHintText: 'DD/MM/AAAA',
+    fieldLabelText: 'Data do Pagamento',
+  );
+
+  if (dataSelecionada != null) {
+    final String ano = dataSelecionada.year.toString();
+    final String mes = dataSelecionada.month.toString().padLeft(2, '0');
+    final String dia = dataSelecionada.day.toString().padLeft(2, '0');
+    pagamentoDataController.text = '$ano-$mes-$dia';
+  }
+}
 
   Widget _ordenarBotao(String texto, String tipo, IconData icon, Color corAtivo) {
     final bool ativo = ordenarPor == tipo;
@@ -515,31 +824,13 @@ class _TelaDividasCaixaState extends State<TelaDividasCaixa> {
                 ),
                 const SizedBox(height: 15),
                 
-                // Valor Inicial
-                TextField(
-                  controller: valorInicialController,
-                  keyboardType: TextInputType.numberWithOptions(decimal: true),
-                  decoration: InputDecoration(
-                    labelText: 'Valor Inicial*',
-                    prefixIcon: const Icon(Icons.attach_money, color: Colors.black),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Colors.grey.shade300),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Colors.black, width: 2),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 15),
                 
-                // Valor Atual
+                // Valor
                 TextField(
                   controller: valorController,
                   keyboardType: TextInputType.numberWithOptions(decimal: true),
                   decoration: InputDecoration(
-                    labelText: 'Valor Atual*',
+                    labelText: 'Valor da Dívida*',
                     prefixIcon: const Icon(Icons.attach_money, color: Colors.black),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -628,192 +919,208 @@ class _TelaDividasCaixaState extends State<TelaDividasCaixa> {
     );
   }
 
-  void abrirDialogRegistrarPagamento(Map<String, dynamic> divida) {
-    dividaSelecionadaParaPagamento = divida;
-    pagamentoValorController.clear();
-    pagamentoDataController.clear();
-    formaPagamentoSelecionada = null;
-    
-    // Definir data atual como padrão
-    final now = DateTime.now();
-    pagamentoDataController.text = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
-    
-    // Definir valor máximo como o valor atual da dívida
-    pagamentoValorController.text = divida['value'].toString();
 
-    showDialog(
-      context: context,
-      builder: (_) => Dialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Registrar Pagamento',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.green,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                
-                // Informações da dívida
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade50,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: Colors.grey.shade300),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Cliente: ${divida['cliente_nome']}',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 16,
-                        ),
+void abrirDialogRegistrarPagamento(Map<String, dynamic> divida) {
+  dividaSelecionadaParaPagamento = divida;
+  pagamentoValorController.clear();
+  pagamentoDataController.clear();
+  formaPagamentoSelecionada = null;
+
+  // Data atual
+  final now = DateTime.now();
+  pagamentoDataController.text =
+      '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+
+  // Valor máximo = valor da dívida
+  pagamentoValorController.text = divida['value'].toString();
+
+  showDialog(
+    context: context,
+    builder: (context) {
+      return StatefulBuilder(
+        builder: (context, setDialogState) {
+          return Dialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Registrar Pagamento',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.green,
                       ),
-                      const SizedBox(height: 5),
-                      Text(
-                        'Valor da Dívida: R\$ ${(divida['value']?.toDouble() ?? 0.0).toStringAsFixed(2).replaceAll('.', ',')}',
-                        style: const TextStyle(
-                          color: Colors.red,
-                          fontWeight: FontWeight.w600,
-                        ),
+                    ),
+                    const SizedBox(height: 10),
+
+                    // Informações da dívida
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade50,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: Colors.grey.shade300),
                       ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 20),
-                
-                // Valor do Pagamento
-                TextField(
-                  controller: pagamentoValorController,
-                  keyboardType: TextInputType.numberWithOptions(decimal: true),
-                  decoration: InputDecoration(
-                    labelText: 'Valor do Pagamento*',
-                    prefixIcon: const Icon(Icons.attach_money, color: Colors.green),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Colors.grey.shade300),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Colors.green, width: 2),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 15),
-                
-                // Data do Pagamento
-                TextField(
-                  controller: pagamentoDataController,
-                  readOnly: true,
-                  decoration: InputDecoration(
-                    labelText: 'Data do Pagamento*',
-                    prefixIcon: const Icon(Icons.calendar_today, color: Colors.green),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Colors.grey.shade300),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Colors.green, width: 2),
-                    ),
-                    suffixIcon: IconButton(
-                      icon: const Icon(Icons.calendar_month),
-                      onPressed: () => _selecionarDataPagamento(context),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 15),
-                
-                // Forma de Pagamento
-                Container(
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.grey.shade300),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<String>(
-                      value: formaPagamentoSelecionada,
-                      isExpanded: true,
-                      hint: const Padding(
-                        padding: EdgeInsets.only(left: 12),
-                        child: Text('Selecione a Forma de Pagamento*', style: TextStyle(color: Colors.grey)),
-                      ),
-                      icon: const Padding(
-                        padding: EdgeInsets.only(right: 12),
-                        child: Icon(Icons.arrow_drop_down, color: Colors.green),
-                      ),
-                      items: [
-                        const DropdownMenuItem<String>(
-                          value: null,
-                          child: Padding(
-                            padding: EdgeInsets.only(left: 12),
-                            child: Text('Selecione a Forma de Pagamento*', style: TextStyle(color: Colors.grey)),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Cliente: ${divida['cliente_nome']}',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 16,
+                            ),
                           ),
+                          const SizedBox(height: 5),
+                          Text(
+                            'Valor da Dívida: R\$ ${(divida['value']?.toDouble() ?? 0.0).toStringAsFixed(2).replaceAll('.', ',')}',
+                            style: const TextStyle(
+                              color: Colors.red,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 20),
+
+                    // Valor do Pagamento
+                    TextField(
+                      controller: pagamentoValorController,
+                      keyboardType:
+                          const TextInputType.numberWithOptions(decimal: true),
+                      decoration: InputDecoration(
+                        labelText: 'Valor do Pagamento*',
+                        prefixIcon: const Icon(Icons.attach_money,
+                            color: Colors.green),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                        ...formasPagamento.map((forma) {
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide:
+                              const BorderSide(color: Colors.green, width: 2),
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 15),
+
+                    // Data do Pagamento
+                    TextField(
+                      controller: pagamentoDataController,
+                      readOnly: true,
+                      decoration: InputDecoration(
+                        labelText: 'Data do Pagamento*',
+                        prefixIcon: const Icon(Icons.calendar_today,
+                            color: Colors.green),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide:
+                              const BorderSide(color: Colors.green, width: 2),
+                        ),
+                        suffixIcon: IconButton(
+                          icon: const Icon(Icons.calendar_month),
+                          onPressed: () =>
+                              _selecionarDataPagamento(context),
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 15),
+
+                    // ✅ FORMA DE PAGAMENTO (CORRIGIDA)
+                    Container(
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: 12),
+                      decoration: BoxDecoration(
+                        border:
+                            Border.all(color: Colors.grey.shade300),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: DropdownButton<String>(
+                        value: formaPagamentoSelecionada,
+                        isExpanded: true,
+                        underline: const SizedBox(),
+
+                        style: const TextStyle(
+                          color: Colors.black,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        hint: const Text(
+                          'Selecione a Forma de Pagamento*',
+                          style: TextStyle(color: Colors.grey),
+                        ),
+
+                        icon: const Icon(Icons.arrow_drop_down,
+                            color: Colors.green),
+
+                        items: formasPagamento.map((forma) {
                           return DropdownMenuItem<String>(
                             value: forma,
-                            child: Padding(
-                              padding: const EdgeInsets.only(left: 12),
-                              child: Text(
-                                forma,
-                                style: const TextStyle(fontSize: 16),
-                              ),
+                            child: Text(
+                              forma,
+                              style:
+                                  const TextStyle(fontSize: 16),
                             ),
                           );
                         }).toList(),
-                      ],
-                      onChanged: (String? newValue) {
-                        setState(() {
-                          formaPagamentoSelecionada = newValue;
-                        });
-                      },
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 25),
-                
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('Cancelar'),
-                    ),
-                    const SizedBox(width: 10),
-                    ElevatedButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        registrarPagamento();
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
-                        foregroundColor: Colors.white,
+
+                        onChanged: (String? newValue) {
+                          setDialogState(() {
+                            formaPagamentoSelecionada = newValue;
+                          });
+                        },
                       ),
-                      child: const Text('Registrar'),
+                    ),
+
+                    const SizedBox(height: 25),
+
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(
+                          onPressed: () =>
+                              Navigator.pop(context),
+                          child: const Text('Cancelar'),
+                        ),
+                        const SizedBox(width: 10),
+                        ElevatedButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            registrarPagamento();
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green,
+                            foregroundColor: Colors.white,
+                          ),
+                          child: const Text('Registrar'),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-              ],
+              ),
             ),
-          ),
-        ),
-      ),
-    );
-  }
+          );
+        },
+      );
+    },
+  );
+}
+
   
   Future<void> registrarPagamento() async {
     if (dividaSelecionadaParaPagamento == null) return;
@@ -822,34 +1129,30 @@ class _TelaDividasCaixaState extends State<TelaDividasCaixa> {
     final dataText = pagamentoDataController.text.trim();
     
     if (valorText.isEmpty || dataText.isEmpty || formaPagamentoSelecionada == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Todos os campos são obrigatórios!'),
-          backgroundColor: Colors.orange,
-        ),
+      if (!mounted) return;
+      await _mostrarPopUpErro(
+        titulo: 'Campos Obrigatórios',
+        mensagem: 'Preencha todos os campos para registrar o pagamento.',
       );
       return;
     }
-
     final valorPagamento = double.tryParse(valorText.replaceAll(',', '.'));
     final valorDivida = dividaSelecionadaParaPagamento!['value']?.toDouble() ?? 0.0;
     
     if (valorPagamento == null || valorPagamento <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Valor do pagamento inválido!'),
-          backgroundColor: Colors.red,
-        ),
+      if (!mounted) return;
+      await _mostrarPopUpErro(
+        titulo: 'Valor Inválido',
+        mensagem: 'Informe um valor válido para o pagamento.',
       );
       return;
     }
 
     if (valorPagamento > valorDivida) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Valor do pagamento (R\$${valorPagamento.toStringAsFixed(2)}) não pode ser maior que a dívida (R\$${valorDivida.toStringAsFixed(2)})'),
-          backgroundColor: Colors.red,
-        ),
+      if (!mounted) return;
+      await _mostrarPopUpErro(
+        titulo: 'Valor Excede Dívida',
+        mensagem: 'O valor do pagamento não pode ser maior que a dívida.',
       );
       return;
     }
@@ -871,12 +1174,12 @@ class _TelaDividasCaixaState extends State<TelaDividasCaixa> {
       if (novoValorDivida <= 0) {
         await supabase.from('debts').delete().eq('id', dividaSelecionadaParaPagamento!['id']);
         
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Pagamento de R\$${valorPagamento.toStringAsFixed(2)} registrado! Dívida quitada e removida do sistema.'),
-            backgroundColor: Colors.green,
-            duration: const Duration(seconds: 3),
-          ),
+        if (!mounted) return;
+        await _mostrarPopUpSucesso(
+          titulo: 'Dívida Quitada!',
+          mensagem: 'Pagamento de R\$${valorPagamento.toStringAsFixed(2)} registrado e dívida quitada com sucesso!',
+          icone: Icons.check_circle_outline,
+          corIcone: Colors.green,
         );
       } else {
         await supabase
@@ -884,24 +1187,23 @@ class _TelaDividasCaixaState extends State<TelaDividasCaixa> {
             .update({'value': novoValorDivida})
             .eq('id', dividaSelecionadaParaPagamento!['id']);
         
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Pagamento de R\$${valorPagamento.toStringAsFixed(2)} registrado com sucesso! Valor restante: R\$${novoValorDivida.toStringAsFixed(2)}'),
-            backgroundColor: Colors.green,
-            duration: const Duration(seconds: 3),
-          ),
+        if (!mounted) return;
+        await _mostrarPopUpSucesso(
+          titulo: 'Pagamento Registrado!',
+          mensagem: 'Pagamento de R\$${valorPagamento.toStringAsFixed(2)} registrado com sucesso!\n\nValor restante: R\$${novoValorDivida.toStringAsFixed(2)}',
+          icone: Icons.payments,
+          corIcone: Colors.green,
         );
       }
       
       await atualizarDividasRapido();
       
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Erro ao registrar pagamento: $e'),
-          backgroundColor: Colors.red,
-          duration: const Duration(seconds: 5),
-        ),
+      if (!mounted) return;
+      await _mostrarPopUpErro(
+        titulo: 'Erro ao Registrar',
+        mensagem: 'Não foi possível registrar o pagamento.',
+        detalhes: e.toString(),
       );
     }
   }
@@ -967,20 +1269,12 @@ class _TelaDividasCaixaState extends State<TelaDividasCaixa> {
                     ),
                   ),
                   
-                  const SizedBox(height: 10),
-                  
-                  Text(
-                    "Valor Inicial: R\$ ${(divida['init_value']?.toDouble() ?? 0.0).toStringAsFixed(2).replaceAll('.', ',')}",
-                    style: const TextStyle(
-                      fontSize: 16,
-                      color: Colors.black,
-                    ),
-                  ),
+
                   
                   const SizedBox(height: 10),
                   
                   Text(
-                    "Valor Atual: R\$ ${(divida['value']?.toDouble() ?? 0.0).toStringAsFixed(2).replaceAll('.', ',')}",
+                    "Valor da Dívida: R\$ ${(divida['value']?.toDouble() ?? 0.0).toStringAsFixed(2).replaceAll('.', ',')}",
                     style: const TextStyle(
                       fontSize: 18,
                       color: Colors.red,
@@ -1163,11 +1457,14 @@ class _TelaDividasCaixaState extends State<TelaDividasCaixa> {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
 
-      floatingActionButton: FloatingActionButton(
+    floatingActionButton: Container(
+      margin: const EdgeInsets.only(bottom: 10), // Ajuste para ficar acima da bottom bar
+      child: FloatingActionButton(
         backgroundColor: Colors.black,
         child: const Icon(Icons.add, color: Colors.white),
         onPressed: () => abrirDialogCadastroDivida(),
       ),
+    ),
 
 
       body: SafeArea(
@@ -1352,6 +1649,7 @@ class _TelaDividasCaixaState extends State<TelaDividasCaixa> {
                                 ),
                               ),
               ),
+                            const SizedBox(height: 35),
             ],
           ),
         ),

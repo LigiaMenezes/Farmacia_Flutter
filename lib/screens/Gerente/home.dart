@@ -714,7 +714,7 @@ class _HomeGerenteState extends State<HomeGerente> {
     return meses[mes - 1];
   }
 
-  Widget _buildGraficoClientes() {
+Widget _buildGraficoClientes() {
     if (totalClientes == 0) {
       return Container(
         padding: const EdgeInsets.all(40),
@@ -809,7 +809,7 @@ class _HomeGerenteState extends State<HomeGerente> {
               Text(
                 'Total: $totalClientes cliente${totalClientes != 1 ? 's' : ''}',
                 style: TextStyle(
-                  fontSize: 16,
+                  fontSize: 14,
                   color: Colors.grey[600],
                   fontWeight: FontWeight.w500,
                 ),
@@ -822,55 +822,51 @@ class _HomeGerenteState extends State<HomeGerente> {
             child: Stack(
               alignment: Alignment.center,
               children: [
-                GestureDetector(
-                  onTapDown: (details) {
-                    setState(() {
-                      if (_touchedIndex == null) {
-                        _touchedIndex = 0;
-                      } else if (_touchedIndex == 0) {
-                        _touchedIndex = 1;
-                      } else {
-                        _touchedIndex = null;
-                      }
-                    });
-                  },
-                  child: PieChart(
-                    PieChartData(
-                      startDegreeOffset: -90,
-                      centerSpaceRadius: 60,
-                      sectionsSpace: 3,
-                      sections: sections,
-                      pieTouchData: PieTouchData(
-                        touchCallback: (FlTouchEvent event, pieTouchResponse) {
-                          if (!event.isInterestedForInteractions ||
-                              pieTouchResponse == null ||
-                              pieTouchResponse.touchedSection == null) {
+                PieChart(
+                  PieChartData(
+                    startDegreeOffset: -90,
+                    centerSpaceRadius: 60,
+                    sectionsSpace: 3,
+                    sections: sections,
+                    pieTouchData: PieTouchData(
+                      enabled: true, // Adicione esta linha para habilitar o toque
+                      touchCallback: (FlTouchEvent event, pieTouchResponse) {
+                          // Primeiro, verifica se o toque foi em uma seção
+                        if (pieTouchResponse != null && 
+                            pieTouchResponse.touchedSection != null) {
+                          // TOQUE EM UMA SEÇÃO/FATIA
+                          final touchedIndex = pieTouchResponse.touchedSection!.touchedSectionIndex;
+                          
+                          setState(() {
+                            _touchedIndex = touchedIndex;
+                          });
+                        } else {
+                          // TOQUE FORA DAS SEÇÕES (no "branco")
+                          // Opção 1: Ignora completamente (não faz nada)
+                          // return;
+                          
+                          // Opção 2: Desseleciona APENAS se já estava selecionado
+                          if (_touchedIndex != null) {
                             setState(() {
                               _touchedIndex = null;
                             });
-                            return;
                           }
-                          
-                          setState(() {
-                            _touchedIndex = pieTouchResponse
-                                .touchedSection!.touchedSectionIndex;
-                          });
-                        },
-                      ),
-                    ),
-                  ),
-                ),
+                        }
+                      },
+                    ), // <--- FECHA PieTouchData
+                  ), // <--- FECHA PieChartData
+                ), // <--- FECHA PieChart (ESTE ESTAVA FALTANDO!)
                 _buildTextoCentro(),
               ],
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 15),
           Column(
             children: [
               Text(
                 'Toque em uma fatia para ver detalhes',
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: 10,
                   color: Colors.grey[500],
                   fontStyle: FontStyle.italic,
                 ),
@@ -927,8 +923,7 @@ class _HomeGerenteState extends State<HomeGerente> {
         ],
       ),
     );
-  }
-
+  } // FIM DA FUNÇÃO
   Widget _buildGraficoPizzaDividas() {
     final agora = DateTime.now();
     final mesAlvo = DateTime(agora.year, agora.month - _mesOffsetGrafico, 1);

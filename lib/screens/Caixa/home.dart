@@ -158,7 +158,7 @@ class _HomeCaixaState extends State<HomeCaixa> {
     );
   }
 
-  Widget _buildGraficoClientes() {
+Widget _buildGraficoClientes() {
     if (totalClientes == 0) {
       return Container(
         padding: const EdgeInsets.all(40),
@@ -266,44 +266,40 @@ class _HomeCaixaState extends State<HomeCaixa> {
             child: Stack(
               alignment: Alignment.center,
               children: [
-                GestureDetector(
-                  onTapDown: (details) {
-                    setState(() {
-                      if (_touchedIndex == null) {
-                        _touchedIndex = 0;
-                      } else if (_touchedIndex == 0) {
-                        _touchedIndex = 1;
-                      } else {
-                        _touchedIndex = null;
-                      }
-                    });
-                  },
-                  child: PieChart(
-                    PieChartData(
-                      startDegreeOffset: -90,
-                      centerSpaceRadius: 60,
-                      sectionsSpace: 3,
-                      sections: sections,
-                      pieTouchData: PieTouchData(
-                        touchCallback: (FlTouchEvent event, pieTouchResponse) {
-                          if (!event.isInterestedForInteractions ||
-                              pieTouchResponse == null ||
-                              pieTouchResponse.touchedSection == null) {
+                PieChart(
+                  PieChartData(
+                    startDegreeOffset: -90,
+                    centerSpaceRadius: 60,
+                    sectionsSpace: 3,
+                    sections: sections,
+                    pieTouchData: PieTouchData(
+                      enabled: true, // Adicione esta linha para habilitar o toque
+                      touchCallback: (FlTouchEvent event, pieTouchResponse) {
+                          // Primeiro, verifica se o toque foi em uma seção
+                        if (pieTouchResponse != null && 
+                            pieTouchResponse.touchedSection != null) {
+                          // TOQUE EM UMA SEÇÃO/FATIA
+                          final touchedIndex = pieTouchResponse.touchedSection!.touchedSectionIndex;
+                          
+                          setState(() {
+                            _touchedIndex = touchedIndex;
+                          });
+                        } else {
+                          // TOQUE FORA DAS SEÇÕES (no "branco")
+                          // Opção 1: Ignora completamente (não faz nada)
+                          // return;
+                          
+                          // Opção 2: Desseleciona APENAS se já estava selecionado
+                          if (_touchedIndex != null) {
                             setState(() {
                               _touchedIndex = null;
                             });
-                            return;
                           }
-                          
-                          setState(() {
-                            _touchedIndex = pieTouchResponse
-                                .touchedSection!.touchedSectionIndex;
-                          });
-                        },
-                      ),
-                    ),
-                  ),
-                ),
+                        }
+                      },
+                    ), // <--- FECHA PieTouchData
+                  ), // <--- FECHA PieChartData
+                ), // <--- FECHA PieChart (ESTE ESTAVA FALTANDO!)
                 _buildTextoCentro(),
               ],
             ),
@@ -371,8 +367,7 @@ class _HomeCaixaState extends State<HomeCaixa> {
         ],
       ),
     );
-  }
-
+  } // FIM DA FUNÇÃO
   Widget _buildHeader() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,

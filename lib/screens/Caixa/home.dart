@@ -129,10 +129,14 @@ class _HomeCaixaState extends State<HomeCaixa> {
       valor = clientesQuitados.toString();
       titulo = 'Quitados';
       cor = const Color(0xFF4CAF50);
-    } else {
+    } else if (_touchedIndex == 1){
       valor = clientesEndividados.toString();
       titulo = 'Endividados';
       cor = const Color(0xFFF44336);
+    } else{
+      valor = totalClientes.toString();
+      titulo = 'Total';
+      cor = Colors.blue;
     }
     
     return Column(
@@ -300,7 +304,10 @@ Widget _buildGraficoClientes() {
                     ), // <--- FECHA PieTouchData
                   ), // <--- FECHA PieChartData
                 ), // <--- FECHA PieChart (ESTE ESTAVA FALTANDO!)
-                _buildTextoCentro(),
+                IgnorePointer(
+                  child: _buildTextoCentro(),
+                ),
+
               ],
             ),
           ),

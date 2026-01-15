@@ -626,7 +626,7 @@ class _HomeGerenteState extends State<HomeGerente> {
         // 2. Pagamentos feitos DURANTE este mês
         final double pagamentosNesteMes = pagamentosPorMes[mesKey] ?? 0.0;
         
-        // 3. Calcular divida_total (saldo anterior + dívidas criadas neste mês)
+        
         double dividaTotalParaMes = saldoMesAnterior + dividasCriadasNesteMes + pagamentosNesteMes;
         
         // 4. Calcular saldo devedor no FIM deste mês
@@ -928,175 +928,35 @@ Widget _buildGraficoClientes() {
       ),
     );
   } // FIM DA FUNÇÃO
-  Widget _buildGraficoPizzaDividas() {
-    final agora = DateTime.now();
-    final mesAlvo = DateTime(agora.year, agora.month - _mesOffsetGrafico, 1);
-    final String mesKey = '${mesAlvo.year}-${mesAlvo.month.toString().padLeft(2, '0')}';
-    final String mesNome = _getNomeMes(mesAlvo.month);
-    final String ano = mesAlvo.year.toString().substring(2);
-    
-    // Encontrar os dados do mês selecionado
-    final dadosMesSelecionado = dadosMensais.firstWhere(
-      (d) => d['mes_key'] == mesKey,
-      orElse: () => {
-        'mes': '$mesNome/$ano',
-        'mes_key': mesKey,
-        'divida_total': 0.0,
-        'divida_paga': 0.0,
-        'divida_restante': 0.0,
-      },
-    );
+Widget _buildGraficoPizzaDividas() {
+  // SEMPRE usar o mês atual (offset = 0)
+  final agora = DateTime.now();
+  final mesAlvo = DateTime(agora.year, agora.month, 1); // Mês atual
+  final String mesKey = '${mesAlvo.year}-${mesAlvo.month.toString().padLeft(2, '0')}';
+  final String mesNome = _getNomeMes(mesAlvo.month);
+  final String ano = mesAlvo.year.toString().substring(2);
+  
+  // Encontrar os dados do mês atual
+  final dadosMesSelecionado = dadosMensais.firstWhere(
+    (d) => d['mes_key'] == mesKey,
+    orElse: () => {
+      'mes': '$mesNome/$ano',
+      'mes_key': mesKey,
+      'divida_total': 0.0,
+      'divida_paga': 0.0,
+      'divida_restante': 0.0,
+    },
+  );
 
-    final double dividaTotal = dadosMesSelecionado['divida_total'].toDouble();
-    final double dividaPaga = dadosMesSelecionado['divida_paga'].toDouble();
-    final double dividaRestante = dadosMesSelecionado['divida_restante'].toDouble();
-    final String mesCompleto = dadosMesSelecionado['mes'].toString();
+  final double dividaTotal = dadosMesSelecionado['divida_total'].toDouble();
+  final double dividaPaga = dadosMesSelecionado['divida_paga'].toDouble();
+  final double dividaRestante = dadosMesSelecionado['divida_restante'].toDouble();
+  final String mesCompleto = dadosMesSelecionado['mes'].toString();
 
-    // Se não houver dívidas no mês
-    if (dividaTotal == 0 && dividaPaga == 0 && dividaRestante == 0) {
-      return Container(
-        padding: const EdgeInsets.all(40),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 15,
-              offset: const Offset(0, 5),
-            ),
-          ],
-        ),
-        child: Column(
-          children: [
-            Icon(
-              Icons.pie_chart,
-              size: 80,
-              color: Colors.grey[400],
-            ),
-            const SizedBox(height: 20),
-            Text(
-              'Nenhuma dívida em $mesCompleto',
-              style: const TextStyle(
-                fontSize: 18,
-                color: Colors.grey,
-              ),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              'Use as setas para navegar entre os meses',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey[500],
-                fontStyle: FontStyle.italic,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    final Color corDividaTotal = const Color(0xFF3498DB);
-    final Color corDividaPaga = const Color(0xFF2ECC71);
-    final Color corDividaRestante = const Color(0xFFE74C3C);
-
-    final total = dividaTotal;
-    
-    List<PieChartSectionData> sections = [];
-    
-    if (dividaPaga > 0) {
-      final percentualPago = (dividaPaga / total) * 100;
-      sections.add(
-        PieChartSectionData(
-          value: dividaPaga,
-          color: corDividaPaga,
-          radius: _touchedIndex == 0 ? 40 : 35,
-          title: percentualPago >= 5 ? '${percentualPago.toStringAsFixed(1)}%' : '',
-          titleStyle: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-          showTitle: percentualPago >= 5,
-        ),
-      );
-    }
-
-    if (dividaRestante > 0) {
-      final percentualRestante = (dividaRestante / total) * 100;
-      sections.add(
-        PieChartSectionData(
-          value: dividaRestante,
-          color: corDividaRestante,
-          radius: _touchedIndex == 1 ? 40 : 35,
-          title: percentualRestante >= 5 ? '${percentualRestante.toStringAsFixed(1)}%' : '',
-          titleStyle: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-          showTitle: percentualRestante >= 5,
-        ),
-      );
-    }
-
-    Widget _buildTextoCentroDividas() {
-      String valor;
-      String titulo;
-      Color cor;
-      
-      if (_touchedIndex == null) {
-        valor = 'R\$${dividaTotal.toStringAsFixed(2)}';
-        titulo = 'Dívida Total';
-        cor = corDividaTotal;
-      } else if (_touchedIndex == 0) {
-        valor = 'R\$${dividaPaga.toStringAsFixed(2)}';
-        titulo = 'Pago';
-        cor = corDividaPaga;
-      } else if (_touchedIndex == 1) {
-        valor = 'R\$${dividaRestante.toStringAsFixed(2)}';
-        titulo = 'Restante';
-        cor = corDividaRestante;
-      } else {
-        valor = 'R\$${dividaTotal.toStringAsFixed(2)}';
-        titulo = 'Total';
-        cor = corDividaTotal;
-      }
-      
-      return Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            valor,
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: cor,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            titulo,
-            style: TextStyle(
-              fontSize: 11,
-              color: Colors.grey[600],
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            mesCompleto,
-            style: TextStyle(
-              fontSize: 10,
-              color: Colors.grey[500],
-              fontStyle: FontStyle.italic,
-            ),
-          ),
-        ],
-      );
-    }
-
+  // Se não houver dívidas no mês
+  if (dividaTotal == 0 && dividaPaga == 0 && dividaRestante == 0) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 15),
+      padding: const EdgeInsets.all(40),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
@@ -1110,214 +970,295 @@ Widget _buildGraficoClientes() {
       ),
       child: Column(
         children: [
-          // Cabeçalho com navegação entre meses
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              IconButton(
-                icon: Icon(
-                  Icons.arrow_back_ios,
-                  color: _mesOffsetGrafico < 5 ? Colors.red : Colors.grey[400],
-                ),
-                onPressed: _mesOffsetGrafico < 5 
-                    ? () {
-                        setState(() {
-                          _mesOffsetGrafico++;
-                          _touchedIndex = null;
-                        });
-                      }
-                    : null,
-                tooltip: 'Mês anterior',
-              ),
-              
-              Expanded(
-                child: Column(
-                  children: [
-                    Text(
-                      'Dívidas do Mês',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.grey[800],
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      mesCompleto,
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.red,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    Text(
-                      _mesOffsetGrafico == 0 
-                          ? '(Mês Atual)'
-                          : '(${_mesOffsetGrafico == 1 ? '1 mês atrás' : '$_mesOffsetGrafico meses atrás'})',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey[500],
-                        fontStyle: FontStyle.italic,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              
-              IconButton(
-                icon: Icon(
-                  Icons.arrow_forward_ios,
-                  color: _mesOffsetGrafico > 0 ? Colors.red : Colors.grey[400],
-                ),
-                onPressed: _mesOffsetGrafico > 0
-                    ? () {
-                        setState(() {
-                          _mesOffsetGrafico--;
-                          _touchedIndex = null;
-                        });
-                      }
-                    : null,
-                tooltip: 'Próximo mês',
-              ),
-            ],
+          Icon(
+            Icons.pie_chart,
+            size: 80,
+            color: Colors.grey[400],
           ),
-          
-          const SizedBox(height: 15),
-          
-          SizedBox(
-            height: 220,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                PieChart(
-                  PieChartData(
-                    startDegreeOffset: -90,
-                    centerSpaceRadius: 60,
-                    sectionsSpace: 2,
-                    sections: sections,
-                    pieTouchData: PieTouchData(
-                      touchCallback: (FlTouchEvent event, pieTouchResponse) {
-                        if (!event.isInterestedForInteractions ||
-                            pieTouchResponse == null ||
-                            pieTouchResponse.touchedSection == null) {
-                          setState(() {
-                            _touchedIndex = null;
-                          });
-                          return;
-                        }
-                        
-                        setState(() {
-                          _touchedIndex = pieTouchResponse
-                              .touchedSection!.touchedSectionIndex;
-                        });
-                      },
-                    ),
-                  ),
-                ),
-                _buildTextoCentroDividas(),
-              ],
-            ),
-          ),
-          
           const SizedBox(height: 20),
-          
-          Column(
-            children: [
-              Text(
-                'Toque em uma fatia para ver detalhes',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey[500],
-                  fontStyle: FontStyle.italic,
-                ),
-              ),
-              const SizedBox(height: 10),
-              Wrap(
-                spacing: 15,
-                runSpacing: 8,
-                alignment: WrapAlignment.center,
-                children: [
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: 10,
-                        height: 10,
-                        decoration: BoxDecoration(
-                          color: corDividaTotal,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        'Total: R\$${dividaTotal.toStringAsFixed(2)}',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: 10,
-                        height: 10,
-                        decoration: BoxDecoration(
-                          color: corDividaPaga,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        'Pago: R\$${dividaPaga.toStringAsFixed(2)}',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: 10,
-                        height: 10,
-                        decoration: BoxDecoration(
-                          color: corDividaRestante,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        'Restante: R\$${dividaRestante.toStringAsFixed(2)}',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              Text(
-                'Use as setas para navegar entre os meses',
-                style: TextStyle(
-                  fontSize: 11,
-                  color: Colors.grey[500],
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
+          Text(
+            'Nenhuma dívida em $mesCompleto',
+            style: const TextStyle(
+              fontSize: 18,
+              color: Colors.grey,
+            ),
           ),
         ],
       ),
     );
   }
 
+  final Color corDividaTotal = const Color(0xFF3498DB);
+  final Color corDividaPaga = const Color(0xFF2ECC71);
+  final Color corDividaRestante = const Color(0xFFE74C3C);
+
+  final total = dividaTotal;
+  
+  List<PieChartSectionData> sections = [];
+  
+  if (dividaPaga > 0) {
+    final percentualPago = (dividaPaga / total) * 100;
+    sections.add(
+      PieChartSectionData(
+        value: dividaPaga,
+        color: corDividaPaga,
+        radius: _touchedIndex == 0 ? 40 : 35,
+        title: percentualPago >= 5 ? '${percentualPago.toStringAsFixed(1)}%' : '',
+        titleStyle: const TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
+        ),
+        showTitle: percentualPago >= 5,
+      ),
+    );
+  }
+
+  if (dividaRestante > 0) {
+    final percentualRestante = (dividaRestante / total) * 100;
+    sections.add(
+      PieChartSectionData(
+        value: dividaRestante,
+        color: corDividaRestante,
+        radius: _touchedIndex == 1 ? 40 : 35,
+        title: percentualRestante >= 5 ? '${percentualRestante.toStringAsFixed(1)}%' : '',
+        titleStyle: const TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
+        ),
+        showTitle: percentualRestante >= 5,
+      ),
+    );
+  }
+
+  Widget _buildTextoCentroDividas() {
+    String valor;
+    String titulo;
+    Color cor;
+    
+    if (_touchedIndex == null) {
+      valor = 'R\$${dividaTotal.toStringAsFixed(2)}';
+      titulo = 'Dívida Total';
+      cor = corDividaTotal;
+    } else if (_touchedIndex == 0) {
+      valor = 'R\$${dividaPaga.toStringAsFixed(2)}';
+      titulo = 'Pago';
+      cor = corDividaPaga;
+    } else if (_touchedIndex == 1) {
+      valor = 'R\$${dividaRestante.toStringAsFixed(2)}';
+      titulo = 'Restante';
+      cor = corDividaRestante;
+    } else {
+      valor = 'R\$${dividaTotal.toStringAsFixed(2)}';
+      titulo = 'Total';
+      cor = corDividaTotal;
+    }
+    
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          valor,
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: cor,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          titulo,
+          style: TextStyle(
+            fontSize: 11,
+            color: Colors.grey[600],
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          mesCompleto,
+          style: TextStyle(
+            fontSize: 10,
+            color: Colors.grey[500],
+            fontStyle: FontStyle.italic,
+          ),
+        ),
+      ],
+    );
+  }
+
+  return Container(
+    padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 15),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(20),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.1),
+          blurRadius: 15,
+          offset: const Offset(0, 5),
+        ),
+      ],
+    ),
+    child: Column(
+      children: [
+        // Cabeçalho simplificado - apenas o título
+        Column(
+          children: [
+            Text(
+              'Dívidas do Mês',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey[800],
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              mesCompleto,
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.red,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            Text(
+              '(Mês Atual)',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey[500],
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ],
+        ),
+        
+        const SizedBox(height: 15),
+        
+        SizedBox(
+          height: 220,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              PieChart(
+                PieChartData(
+                  startDegreeOffset: -90,
+                  centerSpaceRadius: 60,
+                  sectionsSpace: 2,
+                  sections: sections,
+                  pieTouchData: PieTouchData(
+                    touchCallback: (FlTouchEvent event, pieTouchResponse) {
+                      if (!event.isInterestedForInteractions ||
+                          pieTouchResponse == null ||
+                          pieTouchResponse.touchedSection == null) {
+                        setState(() {
+                          _touchedIndex = null;
+                        });
+                        return;
+                      }
+                      
+                      setState(() {
+                        _touchedIndex = pieTouchResponse
+                            .touchedSection!.touchedSectionIndex;
+                      });
+                    },
+                  ),
+                ),
+              ),
+              _buildTextoCentroDividas(),
+            ],
+          ),
+        ),
+        
+        const SizedBox(height: 20),
+        
+        Column(
+          children: [
+            Text(
+              'Toque em uma fatia para ver detalhes',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey[500],
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 15,
+              runSpacing: 8,
+              alignment: WrapAlignment.center,
+              children: [
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 10,
+                      height: 10,
+                      decoration: BoxDecoration(
+                        color: corDividaTotal,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Total: R\$${dividaTotal.toStringAsFixed(2)}',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 10,
+                      height: 10,
+                      decoration: BoxDecoration(
+                        color: corDividaPaga,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Pago: R\$${dividaPaga.toStringAsFixed(2)}',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 10,
+                      height: 10,
+                      decoration: BoxDecoration(
+                        color: corDividaRestante,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Restante: R\$${dividaRestante.toStringAsFixed(2)}',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ],
+        ),
+      ],
+    ),
+  );
+}
   Future<void> carregarFuncionarios() async {
     try {
       final response = await supabase
@@ -1848,6 +1789,7 @@ Future<void> atualizarFuncionariosRapido() async {
                 padding: const EdgeInsets.all(16),
                 child: Column(
                   children: [
+                    const SizedBox(height: 20),
                     _buildGraficoClientes(),
                     
                     const SizedBox(height: 20),

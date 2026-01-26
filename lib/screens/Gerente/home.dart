@@ -24,9 +24,12 @@ class _HomeGerenteState extends State<HomeGerente> {
   int clientesEndividados = 0;
   int totalClientes = 0;
   double valorDividaTotal = 0.0;
-  int _mesOffsetGrafico = 0;
   int _navIndex = 1;
-  int? _touchedIndex;
+  int? _touchedIndexClientes;
+  int? _touchedIndexDividas;
+  double dividaTotalPeriodo = 0.0;
+  double dividaPagaPeriodo = 0.0;
+  double dividaRestantePeriodo = 0.0;
 
   List<Map<String, dynamic>> funcionarios = [];
   bool loading = true;
@@ -37,10 +40,6 @@ class _HomeGerenteState extends State<HomeGerente> {
   final TextEditingController positionController = TextEditingController();
 
   String? editarFuncionarioUsername;
-
-  // Dados para o gráfico de dívidas por mês
-  List<Map<String, dynamic>> dadosMensais = [];
-  bool loadingMensal = true;
 
   // ==================== MÉTODOS DE POP-UP MELHORADOS ====================
 
@@ -476,7 +475,6 @@ class _HomeGerenteState extends State<HomeGerente> {
     await Future.wait([
       carregarDados(),
       carregarFuncionarios(),
-      carregarDadosMensais(),
     ]);
     setState(() => loading = false);
   }
@@ -485,6 +483,10 @@ class _HomeGerenteState extends State<HomeGerente> {
     if (!mounted) return;
     
     setState(() => loading = true);
+
+    dividaTotalPeriodo = 0.0;
+    dividaPagaPeriodo = 0.0;
+    dividaRestantePeriodo = 0.0;
 
     try {
       debugPrint('=== CARREGANDO DADOS ===');
@@ -507,42 +509,51 @@ class _HomeGerenteState extends State<HomeGerente> {
           .timeout(const Duration(seconds: 10));
       
       final Map<int, double> pagamentosPorDivida = {};
+
       for (var pagamento in pagamentos) {
-        final debtsId = pagamento['debts_id'] as int?;
-        final value = pagamento['value'];
-        final num? v = value is num ? value : num.tryParse('$value');
-        
-        if (debtsId != null && v != null) {
-          pagamentosPorDivida[debtsId] = (pagamentosPorDivida[debtsId] ?? 0) + v.toDouble();
+        final id = pagamento['debts_id'];
+        final valor = pagamento['value'];
+
+        final double v = valor is num ? valor.toDouble() : 0.0;
+
+        if (id != null) {
+          pagamentosPorDivida[id] = (pagamentosPorDivida[id] ?? 0) + v;
         }
       }
 
-      double somaDividasAtivas = 0.0;
-      final Set<String> cpfsComDividaAtiva = {};
-      
       for (var divida in dividas) {
-        final debtsId = divida['id'] as int?;
-        final cpf = divida['cpf'] as String?;
-        final value = divida['value'];
-        final num? valorDivida = value is num ? value : num.tryParse('$value');
-        
-        if (debtsId == null || cpf == null || valorDivida == null || valorDivida <= 0) {
-          continue;
-        }
-        
-        final totalPago = pagamentosPorDivida[debtsId] ?? 0;
-        final saldoDevedor = valorDivida;
+        final id = divida['id'];
+        final valor = divida['value'];
 
-        debugPrint('ID:$debtsId | Valor:$valorDivida | Pago:$totalPago | Saldo:$saldoDevedor');
-        
-        if (saldoDevedor > 0) {
-          cpfsComDividaAtiva.add(cpf);
-          somaDividasAtivas += saldoDevedor;
+        final double totalDivida =
+            valor is num ? valor.toDouble() : 0.0;
+
+        final double pago =
+            pagamentosPorDivida[id] ?? 0.0;
+
+        // final double restante = (totalDivida - pago).clamp(0.0, double.infinity);
+
+        dividaTotalPeriodo += totalDivida + pago;
+        dividaPagaPeriodo += pago;
+        dividaRestantePeriodo += totalDivida;
+      }
+
+      final Set<String> cpfsComDivida = {};
+
+      for (var divida in dividas) {
+        final cpf = divida['cpf'];
+        final id = divida['id'];
+
+        final pago = pagamentosPorDivida[id] ?? 0.0;
+        final total =
+            divida['value'] is num ? divida['value'].toDouble() : 0.0;
+
+        if (total - pago > 0 && cpf != null) {
+          cpfsComDivida.add(cpf);
         }
       }
 
-      valorDividaTotal = somaDividasAtivas;
-      clientesEndividados = cpfsComDividaAtiva.length;
+      clientesEndividados = cpfsComDivida.length;
       clientesQuitados = totalClientes - clientesEndividados;
 
     } catch (e) {
@@ -563,121 +574,20 @@ class _HomeGerenteState extends State<HomeGerente> {
     }
   }
 
-  Future<void> carregarDadosMensais() async {
-    setState(() => loadingMensal = true);
-    
-    try {
-      final DateTime agora = DateTime.now();
-      final List<Map<String, dynamic>> mesesDados = [];
-      
-      // Buscar todas as dívidas
-      final todasDividas = await supabase
-          .from('debts')
-          .select('id, value, init_date')
-          .order('init_date');
-      
-      // Buscar todos os pagamentos
-      final todosPagamentos = await supabase
-          .from('payments')
-          .select('value, date')
-          .order('date');
-      
-      // Agrupar pagamentos por mês
-      final Map<String, double> pagamentosPorMes = {};
-      for (var pagamento in todosPagamentos) {
-        final date = pagamento['date'] as String?;
-        if (date != null) {
-          final mesKey = date.substring(0, 7); // YYYY-MM
-          final valorPagamento = pagamento['value'] is num
-              ? pagamento['value'].toDouble()
-              : double.tryParse('${pagamento['value']}') ?? 0.0;
-          
-          pagamentosPorMes[mesKey] = (pagamentosPorMes[mesKey] ?? 0) + valorPagamento;
-        }
-      }
-      
-      // Para cada um dos últimos 6 meses
-      double saldoMesAnterior = 0.0;
-      
-      for (int i = 5; i >= 0; i--) {
-        final DateTime mes = DateTime(agora.year, agora.month - i, 1);
-        final String mesLabel = '${_getNomeMes(mes.month)}/${mes.year.toString().substring(2)}';
-        final String mesKey = '${mes.year}-${mes.month.toString().padLeft(2, '0')}';
-        
-        final inicioMes = '${mes.year}-${mes.month.toString().padLeft(2, '0')}-01';
-        final fimMes = mes.month == 12 
-            ? '${mes.year + 1}-01-01'
-            : '${mes.year}-${(mes.month + 1).toString().padLeft(2, '0')}-01';
-        
-        // 1. Calcular dívidas criadas NESTE mês
-        double dividasCriadasNesteMes = 0.0;
-        for (var divida in todasDividas) {
-          final initDate = divida['init_date'] as String?;
-          if (initDate != null && 
-              initDate.compareTo(inicioMes) >= 0 && 
-              initDate.compareTo(fimMes) < 0) {
-            final valorDivida = divida['value'] is num 
-                ? divida['value'].toDouble() 
-                : double.tryParse('${divida['value']}') ?? 0.0;
-            dividasCriadasNesteMes += valorDivida;
-          }
-        }
-        
-        // 2. Pagamentos feitos DURANTE este mês
-        final double pagamentosNesteMes = pagamentosPorMes[mesKey] ?? 0.0;
-        
-        
-        double dividaTotalParaMes = saldoMesAnterior + dividasCriadasNesteMes + pagamentosNesteMes;
-        
-        // 4. Calcular saldo devedor no FIM deste mês
-        double saldoFimMes = dividaTotalParaMes - pagamentosNesteMes;
-        saldoFimMes = saldoFimMes.clamp(0.0, double.infinity);
-        
-        // DEBUG
-        debugPrint('=== MÊS: $mesLabel ===');
-        debugPrint('Saldo mês anterior: R\$${saldoMesAnterior.toStringAsFixed(2)}');
-        debugPrint('Dívidas criadas neste mês: R\$${dividasCriadasNesteMes.toStringAsFixed(2)}');
-        debugPrint('Dívida total para o mês: R\$${dividaTotalParaMes.toStringAsFixed(2)}');
-        debugPrint('Pagamentos neste mês: R\$${pagamentosNesteMes.toStringAsFixed(2)}');
-        debugPrint('Saldo fim do mês: R\$${saldoFimMes.toStringAsFixed(2)}');
-        
-        mesesDados.add({
-          'mes': mesLabel,
-          'mes_key': mesKey,
-          'divida_total': dividaTotalParaMes,  // Saldo anterior + dívidas criadas
-          'divida_paga': pagamentosNesteMes,   // Pagamentos feitos DURANTE este mês
-          'divida_restante': saldoFimMes,      // Saldo devedor no FIM deste mês
-        });
-        
-        // Atualizar para próximo mês
-        saldoMesAnterior = saldoFimMes;
-      }
-      
-      setState(() {
-        dadosMensais = mesesDados;
-      });
-    } catch (e) {
-      debugPrint('Erro ao carregar dados mensais: $e');
-      dadosMensais = [];
-    }
-    
-    setState(() => loadingMensal = false);
-  }
-
   Widget _buildTextoCentro() {
     String valor;
     String titulo;
     Color cor;
     
-    if (_touchedIndex == null) {
+    if (_touchedIndexClientes == null) {
       valor = totalClientes.toString();
       titulo = 'Total';
       cor = Colors.blue;
-    } else if (_touchedIndex == 0) {
+    } else if (_touchedIndexClientes == 0) {
       valor = clientesQuitados.toString();
       titulo = 'Quitados';
       cor = const Color(0xFF4CAF50);
-    } else if (_touchedIndex == 1){
+    } else if (_touchedIndexClientes == 1){
       valor = clientesEndividados.toString();
       titulo = 'Endividados';
       cor = const Color(0xFFF44336);
@@ -708,14 +618,6 @@ class _HomeGerenteState extends State<HomeGerente> {
         ),
       ],
     );
-  }
-
-  String _getNomeMes(int mes) {
-    final meses = [
-      'Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun',
-      'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'
-    ];
-    return meses[mes - 1];
   }
 
 Widget _buildGraficoClientes() {
@@ -757,7 +659,7 @@ Widget _buildGraficoClientes() {
       PieChartSectionData(
         value: clientesQuitados.toDouble(),
         color: const Color(0xFF4CAF50),
-        radius: _touchedIndex == 0 ? 40 : 35,
+        radius: _touchedIndexClientes == 0 ? 40 : 35,
         title: clientesQuitados > 0 
             ? '${((clientesQuitados / totalClientes) * 100).toStringAsFixed(0)}%'
             : '',
@@ -771,7 +673,7 @@ Widget _buildGraficoClientes() {
       PieChartSectionData(
         value: clientesEndividados.toDouble(),
         color: const Color(0xFFF44336),
-        radius: _touchedIndex == 1 ? 40 : 35,
+        radius: _touchedIndexClientes == 1 ? 40 : 35,
         title: clientesEndividados > 0
             ? '${((clientesEndividados / totalClientes) * 100).toStringAsFixed(0)}%'
             : '',
@@ -842,7 +744,7 @@ Widget _buildGraficoClientes() {
                           final touchedIndex = pieTouchResponse.touchedSection!.touchedSectionIndex;
                           
                           setState(() {
-                            _touchedIndex = touchedIndex;
+                            _touchedIndexClientes = touchedIndex;
                           });
                         } else {
                           // TOQUE FORA DAS SEÇÕES (no "branco")
@@ -850,9 +752,9 @@ Widget _buildGraficoClientes() {
                           // return;
                           
                           // Opção 2: Desseleciona APENAS se já estava selecionado
-                          if (_touchedIndex != null) {
+                          if (_touchedIndexClientes != null) {
                             setState(() {
-                              _touchedIndex = null;
+                              _touchedIndexClientes = null;
                             });
                           }
                         }
@@ -930,30 +832,10 @@ Widget _buildGraficoClientes() {
   } // FIM DA FUNÇÃO
 Widget _buildGraficoPizzaDividas() {
   // SEMPRE usar o mês atual (offset = 0)
-  final agora = DateTime.now();
-  final mesAlvo = DateTime(agora.year, agora.month, 1); // Mês atual
-  final String mesKey = '${mesAlvo.year}-${mesAlvo.month.toString().padLeft(2, '0')}';
-  final String mesNome = _getNomeMes(mesAlvo.month);
-  final String ano = mesAlvo.year.toString().substring(2);
-  
-  // Encontrar os dados do mês atual
-  final dadosMesSelecionado = dadosMensais.firstWhere(
-    (d) => d['mes_key'] == mesKey,
-    orElse: () => {
-      'mes': '$mesNome/$ano',
-      'mes_key': mesKey,
-      'divida_total': 0.0,
-      'divida_paga': 0.0,
-      'divida_restante': 0.0,
-    },
-  );
+  final double dividaTotal = dividaTotalPeriodo;
+  final double dividaPaga = dividaPagaPeriodo;
+  final double dividaRestante = dividaRestantePeriodo;
 
-  final double dividaTotal = dadosMesSelecionado['divida_total'].toDouble();
-  final double dividaPaga = dadosMesSelecionado['divida_paga'].toDouble();
-  final double dividaRestante = dadosMesSelecionado['divida_restante'].toDouble();
-  final String mesCompleto = dadosMesSelecionado['mes'].toString();
-
-  // Se não houver dívidas no mês
   if (dividaTotal == 0 && dividaPaga == 0 && dividaRestante == 0) {
     return Container(
       padding: const EdgeInsets.all(40),
@@ -977,7 +859,7 @@ Widget _buildGraficoPizzaDividas() {
           ),
           const SizedBox(height: 20),
           Text(
-            'Nenhuma dívida em $mesCompleto',
+            'Nenhuma dívida registrada',
             style: const TextStyle(
               fontSize: 18,
               color: Colors.grey,
@@ -1002,7 +884,7 @@ Widget _buildGraficoPizzaDividas() {
       PieChartSectionData(
         value: dividaPaga,
         color: corDividaPaga,
-        radius: _touchedIndex == 0 ? 40 : 35,
+        radius: _touchedIndexDividas == 0 ? 40 : 35,
         title: percentualPago >= 5 ? '${percentualPago.toStringAsFixed(1)}%' : '',
         titleStyle: const TextStyle(
           fontSize: 12,
@@ -1020,7 +902,7 @@ Widget _buildGraficoPizzaDividas() {
       PieChartSectionData(
         value: dividaRestante,
         color: corDividaRestante,
-        radius: _touchedIndex == 1 ? 40 : 35,
+        radius: _touchedIndexDividas == 1 ? 40 : 35,
         title: percentualRestante >= 5 ? '${percentualRestante.toStringAsFixed(1)}%' : '',
         titleStyle: const TextStyle(
           fontSize: 12,
@@ -1037,15 +919,15 @@ Widget _buildGraficoPizzaDividas() {
     String titulo;
     Color cor;
     
-    if (_touchedIndex == null) {
+    if (_touchedIndexDividas == null) {
       valor = 'R\$${dividaTotal.toStringAsFixed(2)}';
       titulo = 'Dívida Total';
       cor = corDividaTotal;
-    } else if (_touchedIndex == 0) {
+    } else if (_touchedIndexDividas == 0) {
       valor = 'R\$${dividaPaga.toStringAsFixed(2)}';
       titulo = 'Pago';
       cor = corDividaPaga;
-    } else if (_touchedIndex == 1) {
+    } else if (_touchedIndexDividas == 1) {
       valor = 'R\$${dividaRestante.toStringAsFixed(2)}';
       titulo = 'Restante';
       cor = corDividaRestante;
@@ -1074,15 +956,6 @@ Widget _buildGraficoPizzaDividas() {
             color: Colors.grey[600],
           ),
         ),
-        const SizedBox(height: 2),
-        Text(
-          mesCompleto,
-          style: TextStyle(
-            fontSize: 10,
-            color: Colors.grey[500],
-            fontStyle: FontStyle.italic,
-          ),
-        ),
       ],
     );
   }
@@ -1106,24 +979,15 @@ Widget _buildGraficoPizzaDividas() {
         Column(
           children: [
             Text(
-              'Dívidas do Mês',
+              'Dívidas',
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
                 color: Colors.grey[800],
               ),
             ),
-            const SizedBox(height: 4),
             Text(
-              mesCompleto,
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.red,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            Text(
-              '(Mês Atual)',
+              'Dívidas do Período',
               style: TextStyle(
                 fontSize: 12,
                 color: Colors.grey[500],
@@ -1152,13 +1016,13 @@ Widget _buildGraficoPizzaDividas() {
                           pieTouchResponse == null ||
                           pieTouchResponse.touchedSection == null) {
                         setState(() {
-                          _touchedIndex = null;
+                          _touchedIndexDividas = null;
                         });
                         return;
                       }
                       
                       setState(() {
-                        _touchedIndex = pieTouchResponse
+                        _touchedIndexDividas = pieTouchResponse
                             .touchedSection!.touchedSectionIndex;
                       });
                     },
@@ -1774,10 +1638,13 @@ Future<void> atualizarFuncionariosRapido() async {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
 
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: Colors.black,
-        child: const Icon(Icons.add, color: Colors.white),
-        onPressed: () => abrirDialogCadastroFuncionario(),
+      floatingActionButton: Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        child: FloatingActionButton(
+          backgroundColor: Colors.black,
+          child: const Icon(Icons.add, color: Colors.white),
+          onPressed: () => abrirDialogCadastroFuncionario(),
+        ),
       ),
 
       body: loading

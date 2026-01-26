@@ -15,6 +15,8 @@ class Login extends StatefulWidget {
 
 class _LoginState extends State<Login> {
 
+  bool _senhaVisivel = false;
+
   void initState() {
     super.initState();
 
@@ -170,10 +172,23 @@ class _LoginState extends State<Login> {
                 width: 300,
                 child: TextField(
                   controller: senhaController,
-                  obscureText: true,
+                  obscureText: !_senhaVisivel,
                   decoration: InputDecoration(
                     labelText: 'SENHA',
                     labelStyle: const TextStyle(color: Color(0xFF000000)),
+
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _senhaVisivel ? Icons.visibility : Icons.visibility_off,
+                        color: Colors.black,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _senhaVisivel = !_senhaVisivel;
+                        });
+                      },
+                    ),
+
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: const BorderSide(

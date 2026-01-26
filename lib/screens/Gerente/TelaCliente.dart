@@ -1180,6 +1180,28 @@ class _TelaClientesState extends State<TelaClientes> {
                         ),
                       ),
                       SizedBox(
+                        width: 130,
+                        child: ElevatedButton.icon(
+                          onPressed: () async {
+                            await RelatorioExcelService.gerarRelatorioCliente(
+                              cpf: cliente['cpf'],
+                              nomeCliente: cliente['name'],
+                              );
+                          },
+                          icon: const Icon(Icons.description, size: 20),
+                          label: const Text("Relatório"),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            elevation: 2,
+                          ),
+                        ),
+                      ),
+                      SizedBox(
                         width: 120,
                         child: ElevatedButton.icon(
                           onPressed: () {

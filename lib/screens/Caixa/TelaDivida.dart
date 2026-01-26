@@ -417,8 +417,14 @@ class _TelaDividasCaixaState extends State<TelaDividasCaixa> {
         final nomeCliente = getNomeClientePorCpf(divida['cpf']);
         divida['cliente_nome'] = nomeCliente ?? 'Cliente sem nome';
         // Adicionar flag para verificar se está vencida
-        divida['esta_vencida'] = divida['end_date'] != null && 
-            DateTime.parse(divida['end_date']).isBefore(DateTime.now());
+        divida['esta_vencida'] = divida['end_date'] != null && DateTime.parse(divida['end_date']).isBefore(DateTime.now());
+        final res = await supabase
+          .from('shadow_debts')
+          .select('init_value')
+          .eq('id', divida['id'])
+          .maybeSingle();
+
+        divida['init_value'] = res?['init_value'];
       }
 
       // Ordenar as dívidas conforme especificação
@@ -1211,7 +1217,20 @@ void abrirDialogRegistrarPagamento(Map<String, dynamic> divida) {
   void _mostrarDetalhesDivida(Map<String, dynamic> divida) {
     final bool temVencimento = divida['end_date'] != null;
     final bool vencida = divida['esta_vencida'] ?? false;
-    
+
+    String formatarData(String? data) {
+      if (data == null || data.isEmpty) return '-';
+      try {
+        final parts = data.split('-');
+        if (parts.length == 3) {
+          return '${parts[2]}/${parts[1]}/${parts[0]}';
+        }
+        return data;
+      } catch (_) {
+        return data ?? '-';
+      }
+    }
+
     showDialog(
       context: context,
       builder: (context) {
@@ -1226,65 +1245,107 @@ void abrirDialogRegistrarPagamento(Map<String, dynamic> divida) {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  Center(
+                    child: Container(
+                      width: 70,
+                      height: 70,
+                      decoration: BoxDecoration(
+                        color: vencida
+                            ? Colors.red.withOpacity(0.1)
+                            : Colors.green.withOpacity(0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        vencida ? Icons.warning_amber : Icons.attach_money,
+                        size: 40,
+                        color: vencida ? Colors.red : Colors.green,
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 15),
+
                   const Center(
                     child: Text(
                       'Detalhes da Dívida',
                       style: TextStyle(
-                        fontSize: 20,
+                        fontSize: 22,
                         fontWeight: FontWeight.bold,
-                        color: Colors.black,
                       ),
-                      textAlign: TextAlign.center,
                     ),
                   ),
-                  
-                  const SizedBox(height: 20),
-                  
-                  Text(
-                    "Cliente: ${divida['cliente_nome']}",
-                    style: const TextStyle(
-                      fontSize: 16,
-                      color: Colors.black,
-                    ),
-                  ),
-                  
-                  const SizedBox(height: 10),
-                  
-                  Text(
-                    "Data de Início: ${divida['init_date']}",
-                    style: const TextStyle(
-                      fontSize: 16,
-                      color: Colors.black,
-                    ),
-                  ),
-                  
-                  const SizedBox(height: 10),
-                  
-                  Text(
-                    "Data de Vencimento: ${temVencimento ? divida['end_date'] : 'Não definida'}",
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: vencida ? Colors.red : Colors.black,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  
 
-                  
-                  const SizedBox(height: 10),
-                  
-                  Text(
-                    "Valor da Dívida: R\$ ${(divida['value']?.toDouble() ?? 0.0).toStringAsFixed(2).replaceAll('.', ',')}",
-                    style: const TextStyle(
-                      fontSize: 18,
-                      color: Colors.red,
-                      fontWeight: FontWeight.bold,
+                  const SizedBox(height: 20),
+
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade50,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.grey.shade300),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "Cliente: ${divida['cliente_nome']}",
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black,
+                          ),
+                        ),
+
+                        const SizedBox(height: 10),
+
+                        Text(
+                          "Data de Início: ${formatarData(divida['init_date'])}",
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black,
+                          ),
+                        ),
+
+                        const SizedBox(height: 10),
+
+                        Text(
+                          "Valor Inicial: R\$ ${(divida['init_value']?.toDouble() ?? 0.0).toStringAsFixed(2).replaceAll('.', ',')}",
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black,
+                          ),
+                        ),
+
+                        const SizedBox(height: 10),
+
+                        Text(
+                          "Data de Vencimento: ${temVencimento ? formatarData(divida['end_date']) : 'Não definida'}",
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: vencida ? Colors.red : Colors.black,
+                          ),
+                        ),
+
+                        const SizedBox(height: 10),
+
+                        Text(
+                          "Valor Atual: R\$ ${(divida['value']?.toDouble() ?? 0.0).toStringAsFixed(2).replaceAll('.', ',')}",
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.red,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  
+
                   const SizedBox(height: 25),
-                  
-                  // Botão Registrar Pagamento
+
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
@@ -1302,15 +1363,19 @@ void abrirDialogRegistrarPagamento(Map<String, dynamic> divida) {
                       ),
                       child: const Text(
                         "REGISTRAR PAGAMENTO",
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style: TextStyle(fontWeight: FontWeight.bold),
                       ),
                     ),
                   ),
-                  
-                  const SizedBox(height: 20),
+
+                  const SizedBox(height: 10),
+
+                  Center(
+                    child: TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Fechar'),
+                    ),
+                  ),
                 ],
               ),
             ),

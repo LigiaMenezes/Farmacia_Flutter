@@ -544,10 +544,20 @@ class _TelaClientesState extends State<TelaClientes> {
         
         // Carregar detalhes das dívidas
         final detalhesDividas = await supabase
-            .from('debts')
-            .select('*')
-            .eq('cpf', cliente['cpf'])
-            .order('init_date', ascending: false);
+          .from('debts')
+          .select('*')
+          .eq('cpf', cliente['cpf'])
+          .order('init_date', ascending: false);
+        
+        for (var divida in detalhesDividas) {
+          final res = await supabase
+            .from('shadow_debts')
+            .select('init_value')
+            .eq('id', divida['id'])
+            .maybeSingle();
+
+          divida['init_value'] = res?['init_value'];
+        }
         
         cliente['detalhes_dividas'] = List<Map<String, dynamic>>.from(detalhesDividas);
       }
@@ -1079,6 +1089,19 @@ class _TelaClientesState extends State<TelaClientes> {
     final bool temDivida = (cliente['total_divida'] ?? 0.0) > 0;
     final List<Map<String, dynamic>> dividas = cliente['detalhes_dividas'] ?? [];
     
+    String formatarData(String? data) {
+      if (data == null || data.isEmpty) return '-';
+      try {
+        final parts = data.split('-');
+        if (parts.length == 3) {
+          return '${parts[2]}/${parts[1]}/${parts[0]}';
+        }
+        return data;
+      } catch (_) {
+        return data ?? '-';
+      }
+    }
+
     showDialog(
       context: context,
       builder: (context) {
@@ -1225,19 +1248,19 @@ class _TelaClientesState extends State<TelaClientes> {
                                     ),
                                     if (divida['end_date'] != null)
                                       Text(
-                                        'Valor inicial:: ${divida['init_value']?.toStringAsFixed(2) ?? '0.00'}',
+                                        'Valor inicial: R\$${divida['init_value']?.toStringAsFixed(2) ?? '0.00'}',
                                         style: const TextStyle(fontSize: 12, color: Colors.grey),
                                       ),
                                   ],
                                 ),
                                 const SizedBox(height: 5),
                                 Text(
-                                  'Início: ${divida['init_date']}',
+                                  'Início: ${formatarData(divida['init_date'])}',
                                   style: const TextStyle(fontSize: 12, color: Colors.grey),
                                 ),
                                 if (divida['end_date'] != null)
                                   Text(
-                                    'Término: ${divida['end_date']}',
+                                    'Vencimento: ${formatarData(divida['end_date'])}',
                                     style: const TextStyle(fontSize: 12, color: Colors.grey),
                                   ),
                               ],

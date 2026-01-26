@@ -43,9 +43,9 @@ class _TelaDividasState extends State<TelaDividas> {
   String? formaPagamentoSelecionada;
   List<String> formasPagamento = [
     'PIX',
-    'Espécie',
-    'Cartão',
-    'Outros'
+    'ESPÉCIE',
+    'CARTÃO',
+    'OUTROS'
   ];
   Map<String, dynamic>? dividaSelecionadaParaPagamento;
 
@@ -414,8 +414,14 @@ class _TelaDividasState extends State<TelaDividas> {
       for (var divida in dividas) {
         final nomeCliente = getNomeClientePorCpf(divida['cpf']);
         divida['cliente_nome'] = nomeCliente ?? 'Cliente sem nome';
-        divida['esta_vencida'] = divida['end_date'] != null && 
-            DateTime.parse(divida['end_date']).isBefore(DateTime.now());
+        divida['esta_vencida'] = divida['end_date'] != null && DateTime.parse(divida['end_date']).isBefore(DateTime.now());
+        final res = await supabase
+            .from('shadow_debts')
+            .select('init_value')
+            .eq('id', divida['id'])
+            .maybeSingle();
+
+          divida['init_value'] = res?['init_value'];
       }
 
       aplicarOrdenacaoEAtualizarFiltradas();
@@ -1203,7 +1209,15 @@ void abrirDialogRegistrarPagamento(Map<String, dynamic> divida) {
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            'Valor da Dívida: R\$ ${(divida['value']?.toDouble() ?? 0.0).toStringAsFixed(2).replaceAll('.', ',')}',
+                            'Valor Atual da Dívida: R\$ ${(divida['value']?.toDouble() ?? 0.0).toStringAsFixed(2).replaceAll('.', ',')}',
+                            style: const TextStyle(
+                              color: Colors.red,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 16,
+                            ),
+                          ),
+                          Text(
+                            'Valor Inicial da Dívida: R\$ ${(divida['init_value']?.toDouble() ?? 0.0).toStringAsFixed(2).replaceAll('.', ',')}',
                             style: const TextStyle(
                               color: Colors.red,
                               fontWeight: FontWeight.w600,
@@ -1497,6 +1511,18 @@ void abrirDialogRegistrarPagamento(Map<String, dynamic> divida) {
   void _mostrarDetalhesDivida(Map<String, dynamic> divida) {
     final bool temVencimento = divida['end_date'] != null;
     final bool vencida = divida['esta_vencida'] ?? false;
+    String formatarData(String? data) {
+      if (data == null || data.isEmpty) return '-';
+      try {
+        final partes = data.split('-');
+        if (partes.length == 3) {
+          return '${partes[2]}/${partes[1]}/${partes[0]}';
+        }
+        return data;
+      } catch (_) {
+        return data ?? '-';
+      }
+    }
     
     showDialog(
       context: context,
@@ -1557,26 +1583,38 @@ void abrirDialogRegistrarPagamento(Map<String, dynamic> divida) {
                         Text(
                           "Cliente: ${divida['cliente_nome']}",
                           style: const TextStyle(
-                            fontSize: 16,
+                            fontSize: 18,
                             color: Colors.black,
-                            fontWeight: FontWeight.w600,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
                         
                         const SizedBox(height: 10),
                         
                         Text(
-                          "Data de Início: ${divida['init_date']}",
+                          "Data de Início: ${formatarData(divida['init_date'])}",
                           style: const TextStyle(
                             fontSize: 16,
                             color: Colors.black,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
                         
                         const SizedBox(height: 10),
+
+                        Text(
+                          "Valor Inicial: R\$ ${(divida['init_value']?.toDouble() ?? 0.0).toStringAsFixed(2).replaceAll('.', ',')}",
+                          style: const TextStyle(
+                            fontSize: 16,
+                            color: Colors.black,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+
+                        const SizedBox(height: 10),
                         
                         Text(
-                          "Data de Vencimento: ${temVencimento ? divida['end_date'] : 'Não definida'}",
+                          "Data de Vencimento: ${temVencimento ? formatarData(divida['end_date']) : 'Não definida'}",
                           style: TextStyle(
                             fontSize: 16,
                             color: vencida ? Colors.red : Colors.black,
@@ -1587,9 +1625,9 @@ void abrirDialogRegistrarPagamento(Map<String, dynamic> divida) {
                         const SizedBox(height: 10),
                         
                         Text(
-                          "Valor da Dívida: R\$ ${(divida['value']?.toDouble() ?? 0.0).toStringAsFixed(2).replaceAll('.', ',')}",
+                          "Valor Atual: R\$ ${(divida['value']?.toDouble() ?? 0.0).toStringAsFixed(2).replaceAll('.', ',')}",
                           style: const TextStyle(
-                            fontSize: 18,
+                            fontSize: 16,
                             color: Colors.red,
                             fontWeight: FontWeight.bold,
                           ),

@@ -504,6 +504,16 @@ class _TelaClientesState extends State<TelaClientesCaixa> {
             .eq('cpf', cliente['cpf'])
             .order('init_date', ascending: false);
         
+        for (var divida in detalhesDividas) {
+          final res = await supabase
+            .from('shadow_debts')
+            .select('init_value')
+            .eq('id', divida['id'])
+            .maybeSingle();
+
+          divida['init_value'] = res?['init_value'];
+        }
+        
         cliente['detalhes_dividas'] = List<Map<String, dynamic>>.from(detalhesDividas);
       }
 
@@ -916,14 +926,24 @@ await supabase
   }
 
   void _mostrarDetalhesCliente(Map<String, dynamic> cliente) {
-    if (!canExecute) return;
-    
     final bool temDivida = (cliente['total_divida'] ?? 0.0) > 0;
     final List<Map<String, dynamic>> dividas = cliente['detalhes_dividas'] ?? [];
+
+    String formatarData(String? data) {
+      if (data == null || data.isEmpty) return '-';
+      try {
+        final parts = data.split('-');
+        if (parts.length == 3) {
+          return '${parts[2]}/${parts[1]}/${parts[0]}';
+        }
+        return data;
+      } catch (_) {
+        return data ?? '-';
+      }
+    }
     
     showDialog(
       context: context,
-      barrierDismissible: false,
       builder: (context) {
         return Dialog(
           shape: RoundedRectangleBorder(
@@ -936,6 +956,24 @@ await supabase
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  Center(
+                    child: Container(
+                      width: 70,
+                      height: 70,
+                      decoration: BoxDecoration(
+                        color: temDivida ? Colors.red.withOpacity(0.1) : Colors.green.withOpacity(0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        temDivida ? Icons.warning_amber : Icons.check_circle,
+                        size: 40,
+                        color: temDivida ? Colors.red : Colors.green,
+                      ),
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 15),
+                  
                   Center(
                     child: Text(
                       cliente['name'],
@@ -1048,16 +1086,21 @@ await supabase
                                         color: Colors.red,
                                       ),
                                     ),
+                                    if (divida['end_date'] != null)
+                                      Text(
+                                        'Valor inicial: R\$${divida['init_value']?.toStringAsFixed(2) ?? '0.00'}',
+                                        style: const TextStyle(fontSize: 12, color: Colors.grey),
+                                      ),
                                   ],
                                 ),
                                 const SizedBox(height: 5),
                                 Text(
-                                  'Início: ${divida['init_date']}',
+                                  'Início: ${formatarData(divida['init_date'])}',
                                   style: const TextStyle(fontSize: 12, color: Colors.grey),
                                 ),
                                 if (divida['end_date'] != null)
                                   Text(
-                                    'Término: ${divida['end_date']}',
+                                    'Vencimento: ${formatarData(divida['end_date'])}',
                                     style: const TextStyle(fontSize: 12, color: Colors.grey),
                                   ),
                               ],
@@ -1068,33 +1111,32 @@ await supabase
                     ),
                   
                   const SizedBox(height: 25),
-                  
+
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
-                      ElevatedButton.icon(
-                        onPressed: () {
-                          if (Navigator.canPop(context)) {
+                      SizedBox(
+                        width: 120,
+                        child: ElevatedButton.icon(
+                          onPressed: () {
                             Navigator.pop(context);
-                          }
-                          if (canExecute) {
                             abrirDialogCadastroCliente(cliente: cliente);
-                          }
-                        },
-                        icon: const Icon(Icons.edit, size: 20),
-                        label: const Text("Editar"),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.black,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                          },
+                          icon: const Icon(Icons.edit, size: 20),
+                          label: const Text("Editar"),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.black,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
                           ),
                         ),
                       ),
                     ],
                   ),
-                  
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 10),
                 ],
               ),
             ),

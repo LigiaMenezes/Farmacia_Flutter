@@ -64,7 +64,99 @@ class _TelaClientesState extends State<TelaClientes> {
   ];
 
   // ==================== MÉTODOS DE POP-UP ====================
+  Future<void> _mostrarPopupRelatorio({
+    required BuildContext context,
+    required String cpf,
+    required String nomeCliente,
+  }) async {
+    showDialog(
+      context: context,
+      builder: (_) => Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.description,
+                size: 48,
+                color: Colors.black,
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Gerar Relatório',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 20),
 
+              // ===== BOTÃO PDF =====
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  icon: const Icon(Icons.picture_as_pdf),
+                  label: const Text('Relatório em PDF'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    foregroundColor: Colors.white,
+                  ),
+                  onPressed: () async {
+                    Navigator.pop(context); // fecha popup
+                    await RelatorioPDFService.gerarRelatorioCliente(
+                      cpf: cpf,
+                      nomeCliente: nomeCliente,
+                    );
+                  },
+                ),
+              ),
+
+              const SizedBox(height: 10),
+
+              // ===== BOTÃO EXCEL =====
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  icon: const Icon(Icons.table_chart),
+                  label: const Text('Relatório em Excel'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    foregroundColor: Colors.white,
+                  ),
+                  onPressed: () async {
+                    Navigator.pop(context); // fecha popup
+                    await RelatorioExcelService.gerarRelatorioCliente(
+                      cpf: cpf,
+                      nomeCliente: nomeCliente,
+                    );
+                  },
+                ),
+              ),
+
+              const SizedBox(height: 10),
+
+              // ===== BOTÃO EXCEL =====
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  label: const Text('Cancelar'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.black,
+                    foregroundColor: Colors.white,
+                  ),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
   Future<void> _mostrarPopUpSucesso({
     required String titulo,
     required String mensagem,
@@ -1156,7 +1248,35 @@ class _TelaClientesState extends State<TelaClientes> {
                     ),
                   
                   const SizedBox(height: 25),
-                  
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      SizedBox(
+                        width: 250,
+                        child: ElevatedButton.icon(
+                          onPressed: () {
+                            _mostrarPopupRelatorio(
+                              context: context,
+                              cpf: cliente['cpf'],
+                              nomeCliente: cliente['name'],
+                            );
+                          },
+                          icon: const Icon(Icons.description, size: 20),
+                          label: const Text("Relatório"),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            elevation: 2,
+                          ),
+                        ),
+                      ),
+                    ]
+                  ),
+                  const SizedBox(height: 15),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
@@ -1176,28 +1296,6 @@ class _TelaClientesState extends State<TelaClientes> {
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
-                          ),
-                        ),
-                      ),
-                      SizedBox(
-                        width: 130,
-                        child: ElevatedButton.icon(
-                          onPressed: () async {
-                            await RelatorioExcelService.gerarRelatorioCliente(
-                              cpf: cliente['cpf'],
-                              nomeCliente: cliente['name'],
-                              );
-                          },
-                          icon: const Icon(Icons.description, size: 20),
-                          label: const Text("Relatório"),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.green,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            elevation: 2,
                           ),
                         ),
                       ),
